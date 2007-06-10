@@ -256,18 +256,16 @@ class Interface
       raise "Must be redefined"
     end
 
-    def emit_container_declaration(io)
-      io.puts "  VALUE #{container_name};"
-    end
-
     def emit_container_definition(io)
       raise "Must be redefined"
     end
 
-    def emit_method_definitions(io)
-      @mappings.each do |m|
-        io.puts %[  rb_define_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.arity});]
-      end
+    def emit_method_definitions
+      raise "Must be redefined"
+    end
+
+    def emit_container_declaration(io)
+      io.puts "VALUE #{container_name};"
     end
 
     def emit_helpers(io, emitted_helpers)
@@ -330,6 +328,11 @@ EOF
       end
     end
 
+    def emit_method_definitions(io)
+      @mappings.each do |m|
+        io.puts %[  rb_define_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.arity});]
+      end
+    end
   end
 
   class Module < Context
@@ -339,6 +342,12 @@ EOF
 
     def emit_container_definition(io)
       io.puts %[  #{container_name} = rb_define_module("#{@name}");]
+    end
+
+    def emit_method_definitions(io)
+      @mappings.each do |m|
+        io.puts %[  rb_define_singleton_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.arity});]
+      end
     end
   end
 
@@ -386,7 +395,9 @@ EOF
 #include <caml/callback.h>
 #include <caml/memory.h>
 
-#{@contexts.map{|c| "static VALUE c#{c.name};"}.join("\n")}
+EOF
+      @contexts.each{|c| c.emit_container_declaration(f)}
+      f.puts <<EOF
 
 static void raise_ocaml_exception(value exn)
 {
