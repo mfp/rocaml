@@ -30,6 +30,17 @@ Interface.generate("foo", :dest => "foo_wrap.c") do
     fun "bar", [INT, INT] => ARRAY(INT)
     # baz : int -> int -> string array
     fun "baz", [INT, INT] => ARRAY(STRING)
+    # foobar : unit -> int
+    fun "foobar", UNIT => INT
+    # barbaz : unit -> unit
+    fun "barbaz", UNIT => UNIT
+  end
+
+  def_class("Bar", :under => "ACME") do |c|
+    fun "bar", INT => INT
+    fun "create", INT => c.abstract_type
+    # method "foo", c.abstract_type => INT
+    # method "bar", c.abstract_type => INT
   end
 end
 
