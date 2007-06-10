@@ -129,7 +129,7 @@ static void
 abstract_#{name}_free(void *p)
 {
   abstract_#{name} *ptr = (abstract_#{name} *)p;
-  caml_remove_global_root(&p->v);
+  caml_remove_global_root(&ptr->v);
 }
 
 static VALUE
@@ -163,7 +163,7 @@ unwrap_abstract_#{name}(VALUE v)
   abstract_#{name} *ptr;
 
   Data_Get_Struct(v, abstract_#{name}, ptr);
-  CAMLreturn(v->v);
+  CAMLreturn(ptr->v);
 }
 
 
