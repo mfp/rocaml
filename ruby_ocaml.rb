@@ -377,7 +377,7 @@ class Interface
       super(name)
       @superclass = options[:super]
       @scope      = options[:under]
-      @abstract_type = Types::Abstract.new("#{name}_t")
+      @abstract_type = Types::Abstract.new(container_name)
     end
 
     def container_name
