@@ -22,7 +22,7 @@ ocaml_native_lib_path = %w[
   /usr/lib/ocaml/**/libasmrun.a
   /usr/local/lib/ocaml/**/libasmrun.a
 ].map{|glob| Dir[glob]}.flatten.sort.last
-                      
+
 if ocaml_native_lib_path.nil?
   puts "Couldn't find OCaml's native code runtime libasmrun.a"
   exit
@@ -39,7 +39,7 @@ else
   OCAMLC   = cmd["ocamlc"]
   OCAMLOPT = cmd["ocamlopt"]
   OCAMLDEP = cmd["ocamldep"]
-end  
+end
 
 def ocamlopt_ld_cmd(obj, *sources)
   "#{OCAMLOPT} -output-obj -o #{obj} #{sources.join(" ")}"
@@ -71,7 +71,7 @@ $(DLLIB): $(OCAML_TARGET)
 
 $(OCAML_TARGET): #{CAML_OBJS.join(" ")} #{CAML_OBJS.map{|x| x.sub(/\.cmx$/, ".o")}.join(" ")}
 	#{ocamlopt_ld_cmd("$@", "$?")}
-        
+
 
 .SUFFIXES: .c .m .cc .cxx .cpp .C .o .mli .ml .cmi .cmo .cmx
 

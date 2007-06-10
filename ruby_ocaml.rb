@@ -336,12 +336,30 @@ EOF
   end
 
   class Module < Context
+    DEFAULT_OPTIONS = {
+      :under => nil,
+    }
+    def initialize(name, options = {})
+      options = DEFAULT_OPTIONS.merge(options)
+      super(name)
+      @scope = options[:under]
+    end
+
     def container_name
       "m#{@name}"
     end
 
     def emit_container_definition(io)
-      io.puts %[  #{container_name} = rb_define_module("#{@name}");]
+      if @scope
+        io.puts <<EOF
+  {
+    VALUE scope = rb_eval_string("#{@scope}");
+    #{container_name} = rb_define_module_under(scope, "#{@name}");
+  }
+EOF
+      else
+        io.puts %[  #{container_name} = rb_define_module("#{@name}");]
+      end
     end
 
     def emit_method_definitions(io)
