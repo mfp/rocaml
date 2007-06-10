@@ -186,7 +186,7 @@ end
 include Types::Exported
 
 class Mapping
-  attr_reader :src, :dst, :name
+  attr_reader :src, :dst, :name, :pass_self
 
   def initialize(name, src_type, dst_type, pass_self)
     @name = name
@@ -195,11 +195,11 @@ class Mapping
     @pass_self = pass_self
   end
 
-  def mangled_name(prefix = "")
+  def mangled_name(prefix)
     prefix + mangle_caml_name(@name)
   end
 
-  def generate(prefix = "")
+  def generate(prefix)
     fmt = lambda{|a| a.map{|x| "VALUE #{x}"}.join(", ")}
     if @pass_self
       formal_args = param_list
@@ -216,9 +216,9 @@ VALUE #{mangled_name(prefix)}_ex
   static value *closure = NULL;
 
   if(closure == NULL) {
-    closure = caml_named_value("#{@name}");
+    closure = caml_named_value("#{prefix}.#{@name}");
     if(closure == NULL) {
-      *exception = rb_str_new2("Couldn't find OCaml value '#{@name}'.");
+      *exception = rb_str_new2("Couldn't find OCaml value '#{prefix}.#{@name}'.");
       CAMLreturn(Qnil);
     }
   }

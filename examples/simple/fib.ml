@@ -17,9 +17,9 @@ let raise_if_negative num =
 
 open Callback
 let _ =
-  register "fib" fib;
-  register "fib_map" fib_map;
-  register "fib_map_s" fib_map_s;
-  register "raise_if_negative" raise_if_negative
+  register "Fib.fib" fib;
+  register "Fib.fib_map" fib_map;
+  register "Fib.fib_map_s" fib_map_s;
+  register "Fib.raise_if_negative" raise_if_negative
 
 
