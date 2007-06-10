@@ -453,7 +453,11 @@ EOF
 
     def emit_method_definitions(io)
       @mappings.each do |m|
-        io.puts %[  rb_define_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.ruby_arity});]
+        if m.pass_self
+          io.puts %[  rb_define_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.ruby_arity});]
+        else
+          io.puts %[  rb_define_singleton_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.ruby_arity});]
+        end
       end
     end
 
