@@ -303,7 +303,8 @@ EOF
     if @pass_self
       ["caml_self"] + (1...arity).map{|i| "caml_param#{i}"}
     else
-      (1..arity).map{|i| "caml_param#{i}"}
+      # cannot use caml_param, caml_* are reserved
+      (1..arity).map{|i| "camlparam#{i}"}
     end
   end
 
