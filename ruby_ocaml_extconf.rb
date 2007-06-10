@@ -1,12 +1,22 @@
 require 'mkmf'
 
-EXT_NAME = "foo"          # extension name, XXX in   require 'XXX'
-OCAML_PACKAGES = %w[]     # if non-empty, will use ocamlfind
-CAML_LIBS = %[]           # some cmxa; auto-detection?
-CAML_OBJS = %w[]          # list of .cmx
-CAML_TARGET = %w[]        # a .o file that will contain your code and the runtime
-CAML_FLAGS = ""           # compilation flags
-CAML_INCLUDES = %w[]      # -I options (-I must be prepended)
+%w[EXT_NAME OCAML_PACKAGES CAML_LIBS CAML_OBJS CAML_TARGET
+   CAML_FLAGS CAML_INCLUDES].each do |c|
+     begin
+       c = Object.const_get(c)
+     rescue Exception
+       puts "You must define the #{c} constant"
+       exit(1)
+     end
+   end
+
+#EXT_NAME = "foo"          # extension name, XXX in   require 'XXX'
+#OCAML_PACKAGES = %w[]     # if non-empty, will use ocamlfind
+#CAML_LIBS = %[]           # some cmxa; auto-detection?
+#CAML_OBJS = %w[]          # list of .cmx
+#CAML_TARGET = %w[]        # a .o file that will contain your code and the runtime
+#CAML_FLAGS = ""           # compilation flags
+#CAML_INCLUDES = %w[]      # -I options (-I must be prepended)
 
 ocaml_native_lib_path = %w[
   /usr/lib/ocaml/**/libasmrun.a
