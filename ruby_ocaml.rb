@@ -119,7 +119,7 @@ EOF
       "wrap_abstract_#{name}(#{x})"
     end
 
-    def ruby_to_caml
+    def ruby_to_caml(x)
       "unwrap_abstract_#{name}(#{x})"
     end
 
@@ -188,13 +188,11 @@ include Types::Exported
 class Mapping 
   attr_reader :src, :dst, :name
 
-  # self_type: if set, pass self as abstract type taken from opaque RDATA
-  # object
-  def initialize(name, src_type, dst_type, self_type)
+  def initialize(name, src_type, dst_type, pass_self)
     @name = name
     @src = src_type
     @dst = dst_type
-    @self_type = self_type
+    @pass_self = pass_self
   end
 
   def mangled_name(prefix = "")
@@ -202,9 +200,14 @@ class Mapping
   end
 
   def generate(prefix = "")
+    if @pass_self
+      formal_args = "(" + param_list.map{|x| "VALUE #{x}"}.join(", ") + ")"
+    else
+      formal_args = "(" + (["self"] + param_list).map{|x| "VALUE #{x}"}.join(", ") + ")"
+    end
     <<EOF
 VALUE #{mangled_name(prefix)}
-      (VALUE self#{param_list.empty? ? "" : ", "}#{param_list.map{|x| "VALUE #{x}"}.join(", ")})
+      #{formal_args}
 {
 #{locals(["ret"] + caml_param_list).join("\n")}
 #{"  value args[32];" if arity > 3}
@@ -236,13 +239,21 @@ EOF
     end
   end
 
+  def ruby_arity
+    if @pass_self
+      arity - 1
+    else
+      arity
+    end
+  end
+
   private
   def callback(f, args)
     case ar = arity
     when 0; "caml_callback_exn(#{f}, Val_unit)"
-    when 1; "caml_callback_exn(#{f}, param1)"
+    when 1; "caml_callback_exn(#{f}, #{caml_param_list.first})"
     when 2, 3; 
-      "caml_callback#{arity}_exn(#{f}, #{param_list.join(", ")})"
+      "caml_callback#{arity}_exn(#{f}, #{caml_param_list.join(", ")})"
     else
       "  caml_callbackN_exn(#{f}, #{arity}, #{args})"
     end
@@ -258,7 +269,7 @@ EOF
         r = "  #{caml} = " + @src[i-1].ruby_to_caml(ruby) + ";"
         i += 1
         r
-      end
+      end.join("\n")
     else
       i = 1
       param_list.map do |p|
@@ -289,11 +300,19 @@ EOF
   end
 
   def caml_param_list
-    (1..arity).map{|i| "caml_param#{i}"}
+    if @pass_self
+      ["caml_self"] + (1...arity).map{|i| "caml_param#{i}"}
+    else
+      (1..arity).map{|i| "caml_param#{i}"}
+    end
   end
 
   def param_list
-    (1..arity).map{|i| "param#{i}"}
+    if @pass_self
+      ["self"] + (1...arity).map{|i| "param#{i}"}
+    else
+      (1..arity).map{|i| "param#{i}"}
+    end
   end
 
   def mangle_caml_name(name)
@@ -311,13 +330,13 @@ class Interface
     end
 
     def fun(name, types_and_options)
-      types_and_options = types_and_options.clone
-      raise "Want a type => type mapping" unless Hash === types_and_options
-      self_type = types_and_options.delete(:self)
-      from = types_and_options.keys.first
-      to   = types_and_options[from]
-      @mappings << Mapping.new(name, from, to, self_type)
+      def_helper(name, types_and_options, false)
     end
+
+    def method(name, types_and_options)
+      def_helper(name, types_and_options, true)
+    end
+
 
     def container_name
       raise "Must be redefined"
@@ -363,6 +382,16 @@ class Interface
         end
       end
     end
+
+    private
+    def def_helper(name, types_and_options, pass_self)
+      types_and_options = types_and_options.clone
+      raise "Want a type => type mapping" unless Hash === types_and_options
+      from = types_and_options.keys.first
+      to   = types_and_options[from]
+      @mappings << Mapping.new(name, from, to, pass_self)
+    end
+
   end
 
   class Class < Context
@@ -400,7 +429,7 @@ EOF
 
     def emit_method_definitions(io)
       @mappings.each do |m|
-        io.puts %[  rb_define_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.arity});]
+        io.puts %[  rb_define_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.ruby_arity});]
       end
     end
 
