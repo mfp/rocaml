@@ -107,12 +107,79 @@ EOF
     end
   end # Array
 
+  module Abstract
+    attr_reader :name
+    def initialize(name)
+      @name = name
+    end
+
+    def need_helper?; true end
+
+    def caml_to_ruby(x)
+      "wrap_abstract_#{name}(#{x})"
+    end
+
+    def ruby_to_caml
+      "unwrap_abstract_#{name}(#{x})"
+    end
+
+    def caml_to_ruby_helper
+      <<EOF
+static void
+abstract_#{name}_free(void *p)
+{
+  abstract_#{name} *ptr = (abstract_#{name} *)p;
+  caml_remove_global_root(&p->v);
+}
+
+static VALUE
+wrap_abstract_#{name}(value v)
+{
+  CAMLparam1(v);
+  abstract_#{name} *ptr;
+  VALUE ret;
+
+  ret = Data_Make_Struct(#{name}, abstract_#{name}, 0, abstract_#{name}_free, ptr);
+  caml_register_global_root(&ptr->v);
+  ptr->v = v;
+  CAMLreturn(ret);
+}
+
+
+EOF
+    end
+
+    def ruby_to_caml_helper
+      <<EOF
+typedef struct {
+  value v;
+} abstract_#{name};
+
+static value
+unwrap_abstract_#{name}(VALUE v)
+{
+  CAMLparam0();
+  abstract_#{name} *ptr;
+
+  Data_Get_Struct(v, abstract_#{name}, ptr);
+  CAMLreturn(v->v);
+}
+
+
+EOF
+
+    end
+
+  end
+
+
   module Exported
     INT = Int.new
     BOOL = Bool.new
     STRING = String.new
     UNIT = Unit.new
     def ARRAY(type); Array.new(type) end
+    def ABSTRACT(name); Abstract.new(name) end
   end
 end
 
