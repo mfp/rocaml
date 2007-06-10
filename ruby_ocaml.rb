@@ -76,7 +76,7 @@ static VALUE
   }
   RARRAY(ret)->len = siz;
 
-  return ret;
+  CAMLreturn(ret);
 }
 
 
