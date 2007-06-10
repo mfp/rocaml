@@ -107,7 +107,7 @@ EOF
     end
   end # Array
 
-  module Abstract
+  class Abstract < Type
     attr_reader :name
     def initialize(name)
       @name = name
@@ -150,6 +150,7 @@ EOF
     end
 
     def ruby_to_caml_helper
+      # ruby_to_caml will be called before, must contain type definition
       <<EOF
 typedef struct {
   value v;
@@ -167,7 +168,6 @@ unwrap_abstract_#{name}(VALUE v)
 
 
 EOF
-
     end
 
   end
@@ -366,6 +366,8 @@ class Interface
   end
 
   class Class < Context
+    attr_reader :abstract_type
+
     DEFAULT_OPTIONS = {
       :super => "rb_cObject",
       :under => nil
@@ -375,6 +377,7 @@ class Interface
       super(name)
       @superclass = options[:super]
       @scope      = options[:under]
+      @abstract_type = Types::Abstract.new("#{name}_t")
     end
 
     def container_name
@@ -399,6 +402,13 @@ EOF
       @mappings.each do |m|
         io.puts %[  rb_define_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.arity});]
       end
+    end
+
+    def emit_helpers(io, emitted_helpers)
+      # ruby_to_caml before, contains type definition
+      emit_helper_aux(io, @abstract_type, emitted_helpers, :ruby_to_caml)
+      emit_helper_aux(io, @abstract_type, emitted_helpers, :caml_to_ruby)
+      super(io, emitted_helpers)
     end
   end
 
