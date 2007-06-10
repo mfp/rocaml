@@ -8,8 +8,8 @@ module Types
   end
 
   class Unit < Type
-    def caml_to_ruby; "Qnil" end
-    def ruby_to_caml; "Val_unit" end
+    def caml_to_ruby(x); "Qnil" end
+    def ruby_to_caml(x); "Val_unit" end
   end
 
   class Int < Type
