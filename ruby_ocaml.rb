@@ -74,6 +74,7 @@ static VALUE
   for(i = 0; i < siz; i++) {
       RARRAY(ret)->ptr[i] = #{@type.caml_to_ruby("Field(v, i)")};
   }
+  RARRAY(ret)->len = siz;
 
   return ret;
 }
