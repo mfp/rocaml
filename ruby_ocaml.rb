@@ -185,7 +185,7 @@ end
 
 include Types::Exported
 
-class Mapping 
+class Mapping
   attr_reader :src, :dst, :name
 
   def initialize(name, src_type, dst_type, pass_self)
@@ -200,33 +200,56 @@ class Mapping
   end
 
   def generate(prefix = "")
+    fmt = lambda{|a| a.map{|x| "VALUE #{x}"}.join(", ")}
     if @pass_self
-      formal_args = "(" + param_list.map{|x| "VALUE #{x}"}.join(", ") + ")"
+      formal_args = param_list
     else
-      formal_args = "(" + (["self"] + param_list).map{|x| "VALUE #{x}"}.join(", ") + ")"
+      formal_args = ["self"] + param_list
     end
     <<EOF
-VALUE #{mangled_name(prefix)}
-      #{formal_args}
+VALUE #{mangled_name(prefix)}_ex
+      (VALUE *exception, #{fmt[formal_args]})
 {
+  CAMLparam0();
 #{locals(["ret"] + caml_param_list).join("\n")}
 #{"  value args[32];" if arity > 3}
   static value *closure = NULL;
+
   if(closure == NULL) {
     closure = caml_named_value("#{@name}");
     if(closure == NULL) {
-      rb_raise(rb_eStandardError, "Couldn't find OCaml value #{@name}.");
+      *exception = rb_str_new2("Couldn't find OCaml value '#{@name}'.");
+      CAMLreturn(Qnil);
     }
   }
 
 #{prepare_callback("args")}
   ret = #{callback("*closure", "args")};
+
   if(Is_exception_result(ret)) {
-    raise_ocaml_exception(Extract_exception(ret));
+    *exception = ocaml_exception_string(Extract_exception(ret));
+    CAMLreturn(Qnil);
   }
-  return #{dst.caml_to_ruby("ret")};
+
+  CAMLreturn(#{dst.caml_to_ruby("ret")});
 }
 
+VALUE #{mangled_name(prefix)}
+      (#{fmt[formal_args]})
+{
+  VALUE ret;
+  VALUE exception = Qnil;
+
+  ret = #{mangled_name(prefix)}_ex(&exception, #{formal_args.join(", ")});
+
+  if(exception == Qnil) {
+    return ret;
+  } else {
+    rb_raise(rb_eStandardError, StringValuePtr(exception));
+  }
+
+  return Qnil; /* never reached */
+}
 
 EOF
   end
@@ -252,7 +275,7 @@ EOF
     case ar = arity
     when 0; "caml_callback_exn(#{f}, Val_unit)"
     when 1; "caml_callback_exn(#{f}, #{caml_param_list.first})"
-    when 2, 3; 
+    when 2, 3;
       "caml_callback#{arity}_exn(#{f}, #{caml_param_list.join(", ")})"
     else
       "  caml_callbackN_exn(#{f}, #{arity}, #{args})"
@@ -284,7 +307,7 @@ EOF
     return acc if params.empty?
     5.downto(1) do |i|
       if params.size >= i then
-        return locals(params[i..-1], 
+        return locals(params[i..-1],
                       acc + ["  #{name}#{i}(" + params[0, i].join(", ") + ");"])
       end
     end
@@ -416,7 +439,7 @@ class Interface
 
     def emit_container_definition(io)
       if @scope
-        io.puts <<EOF  
+        io.puts <<EOF
   {
     VALUE scope;
     scope = rb_eval_string("#{@scope}");
@@ -524,18 +547,26 @@ EOF
       @contexts.each{|c| c.emit_container_declaration(f)}
       f.puts <<EOF
 
-static void raise_ocaml_exception(value exn)
+static VALUE
+ocaml_exception_string(value exn)
 {
+  CAMLparam1(exn);
+  CAMLlocal1(str);
+  char exception_text[256];
   static value *closure;
-  value str;
 
   if(closure == NULL) {
     closure = caml_named_value("Printexc.to_string");
   }
-  str = caml_callback(*closure, exn);
-  rb_raise(rb_eStandardError, "OCaml exception: %s", String_val(str));
 
-  /* never reached */
+  if(closure) {
+    str = caml_callback(*closure, exn);
+
+    snprintf(exception_text, 255, "OCaml exception: %s", String_val(str));
+    CAMLreturn(rb_str_new2(exception_text));
+  } else {
+    CAMLreturn(rb_str_new2("OCaml exception"));
+  }
 }
 
 EOF

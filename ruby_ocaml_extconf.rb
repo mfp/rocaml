@@ -45,6 +45,18 @@ def ocamlopt_ld_cmd(obj, *sources)
   "#{OCAMLOPT} -output-obj -o #{obj} #{sources.join(" ")}"
 end
 
+CAML_OBJS.push("rubyOCamlUtil.cmx") unless CAML_OBJS.include?("rubyOCamlUtil.cmx")
+File.open("rubyOCamlUtil.ml", "w") do |f|
+  f.puts <<EOF
+(* register ocaml functions needed by ruby-ocaml *)
+let _ =
+  (* used when mapping OCaml exceptions to Ruby *)
+  Callback.register "Printexc.to_string" Printexc.to_string
+
+EOF
+end
+
+# needed by mkmf's create_makefile
 $LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}"
 
 create_makefile(EXT_NAME)
