@@ -185,10 +185,12 @@ static value
     def caml_to_ruby_helper
       <<EOF
 static void
-abstract_#{name}_free(void *p)
+abstract_#{name}_free(abstract_#{name} *ptr)
 {
-  abstract_#{name} *ptr = (abstract_#{name} *)p;
-  caml_remove_global_root(&ptr->v);
+  if(ptr) {
+    caml_remove_global_root(&ptr->v);
+    free(ptr);
+  }
 }
 
 static VALUE
