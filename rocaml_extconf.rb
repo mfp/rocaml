@@ -101,18 +101,25 @@ $(OCAML_TARGET): #{CAML_OBJS.join(" ")} #{CAML_OBJS.map{|x| x.sub(/\.cmx$/, ".o"
 
 # clean
 
-.PHONY: clean_ocaml
+.PHONY: clean_rocaml
 
-clean_ocaml:
+clean_rocaml:
 	@-$(RM) *.cmx *.cmi *.cmo
 
-clean: clean_ocaml
+clean: clean_rocaml
+
+.PHONY: distclean_rocaml
+
+distclean_rocaml:
+	@-$(RM) *_rocaml_wrapper.c depend .depend rubyOCamlUtil.ml
+
+distclean: distclean_rocaml
 
 # depend
 ########
 
 .depend depend:
-	rm -f .depend
+	@-$(RM) .depend
 	$(OCAMLDEP) $(OCAML_INCLUDES) *.ml *.mli > .depend
 
 include .depend
