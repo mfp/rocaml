@@ -1,6 +1,6 @@
 require 'mkmf'
 
-%w[EXT_NAME OCAML_PACKAGES CAML_LIBS CAML_OBJS CAML_TARGET
+%w[EXT_NAME OCAML_PACKAGES CAML_LIBS CAML_OBJS
    CAML_FLAGS CAML_INCLUDES].each do |c|
      begin
        c = Object.const_get(c)
@@ -14,9 +14,11 @@ require 'mkmf'
 #OCAML_PACKAGES = %w[]     # if non-empty, will use ocamlfind
 #CAML_LIBS = %[]           # some cmxa; auto-detection?
 #CAML_OBJS = %w[]          # list of .cmx
-#CAML_TARGET = %w[]        # a .o file that will contain your code and the runtime
 #CAML_FLAGS = ""           # compilation flags
 #CAML_INCLUDES = %w[]      # -I options (-I must be prepended)
+
+
+CAML_TARGET = "#{EXT_NAME}_rocaml_runtime.o"
 
 ocaml_native_lib_path = %w[
   /usr/lib/ocaml/**/libasmrun.a

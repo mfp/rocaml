@@ -11,9 +11,6 @@ CAML_LIBS = %[]
 # list of .cmx
 CAML_OBJS = %w[fib.cmx]
 
-# a .o file that will contain your code and the runtime
-CAML_TARGET = %w[fibonacci.o]
-
 # compilation flags
 CAML_FLAGS = ""
 

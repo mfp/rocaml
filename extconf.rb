@@ -5,9 +5,6 @@ EXT_NAME = "foo"
 # list of .cmx
 CAML_OBJS = %w[]
 
-# a .o file that will contain your code and the runtime
-CAML_TARGET = %w[]
-
 # if non-empty, will use ocamlfind
 OCAML_PACKAGES = %w[]
 
