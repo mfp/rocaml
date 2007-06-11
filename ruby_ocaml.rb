@@ -196,7 +196,7 @@ class Mapping
   end
 
   def mangled_name(prefix)
-    prefix + mangle_caml_name(@name)
+    prefix + "_wrapper__" + (@pass_self ? "" : "s_") + @name.gsub(/\./, "_")
   end
 
   def generate(prefix)
@@ -337,10 +337,6 @@ EOF
     else
       (1..arity).map{|i| "param#{i}"}
     end
-  end
-
-  def mangle_caml_name(name)
-    "wrapper__" + name.gsub(/\./, "_")
   end
 end
 
