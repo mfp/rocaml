@@ -1,0 +1,65 @@
+rocaml  copyright (c) 2007 Mauricio Fernandez <mfp@acm.org>
+
+Overview
+========
+rocaml allows you to write Ruby extensions (that is, extensions meant to be
+used with the reference implementation of Ruby, developed by matz and
+others) in Objective Caml.
+
+Developing Ruby extensions with rocaml is easier and more convenient than
+writing a plain old C extension since (in addition to coding in Objective Caml
+instead of C):
+* rocaml handles type conversions for a wide range of types, including
+  abstract types and arrays of values of any supported type (e.g. arrays of
+  arrays of objects)
+* the boilerplate code that registers the Ruby methods, as well as all the
+  code to wrap the calls to Objective Caml functions, is generated
+  automatically. At no point is there any need to write a single line of C
+  code when using rocaml.
+
+Making an extension with rocaml involves two steps:
+* implementing the desired functionality in Objective Caml, and registering
+  the functions to be exported
+  (using Callback.register : string -> 'a -> unit)
+* creating the extconf.rb file (just modify the sample extconf.rb distributed
+  with rocaml) defining the interface of your Objective Caml code.
+
+Requirements
+------------
+  * Ruby 1.8 or 1.9
+  * the C toolchain used to build normal Ruby extensions
+  * ocaml -- rocaml has been tested with ocaml 3.09.2, but it should
+    work with any version compatible with your Objective Caml code (as long as
+    a few functions like Callback.register and the command-line interface are
+    compatible)
+
+Making an extension
+-------------------
+
+  * copy rocaml.rb and rocaml_extconf.rb to the source directory.
+  * add the appropriate Callback.register calls to your ML code in order to
+    export the functions to be made available to Ruby.
+  * create an extconf.rb file based on the sample one distributed with rocaml.
+    The interface must match the functions exported in the previous step.
+
+Note that rocaml only does as much as a normal extconf.rb: if you want to
+provide a way to install your extension, either use setup.rb or RubyGems.
+Normally, all you have to do is pretend that it is a plain old C extension and
+package it as usual, by placing the .ml(i) sources, extconf.rb, rocaml.rb and
+rocaml_extconf.rb under a directory determined by your packaging system.
+
+Building a rocaml-based extension
+---------------------------------
+
+ $ extconf.rb
+ $ make
+
+
+License
+-------
+
+See LICENSE.
+
+--
+
+Mauricio Fernandez <mfp@acm.org>
