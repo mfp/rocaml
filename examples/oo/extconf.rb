@@ -26,6 +26,7 @@ Interface.generate("oo") do
     fun "new_from_string", STRING => c.abstract_type
     fun "new", INT => c.abstract_type
     method "inc", c.abstract_type => UNIT
+    method "dec", c.abstract_type => UNIT
     method "get", c.abstract_type => INT
   end
 end

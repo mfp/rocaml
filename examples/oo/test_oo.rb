@@ -5,3 +5,5 @@ p o.get
 o.inc
 o.inc
 p o.get
+o.dec
+p o.get
