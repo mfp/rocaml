@@ -51,7 +51,7 @@ rocaml_extconf.rb under a directory determined by your packaging system.
 Building a rocaml-based extension
 ---------------------------------
 
- $ extconf.rb
+ $ ruby extconf.rb
  $ make
 
 
