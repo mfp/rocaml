@@ -24,8 +24,9 @@ require 'rocaml'
 Interface.generate("fib") do
   def_module("Fib") do
     fun "fib", INT => INT
-    fun "fib_map", [INT, INT] => ARRAY(INT)
-    fun "fib_map_s", [INT, INT] => ARRAY(STRING)
+    fun "fib_range", [INT, INT] => ARRAY(INT)
+    fun "fib_range_s", [INT, INT] => ARRAY(STRING)
+    fun "fib_range_plus", [INT, INT, ARRAY(FLOAT)] => ARRAY(FLOAT)
     fun "raise_if_negative", INT => UNIT
     fun "inexistent", INT => INT
   end
