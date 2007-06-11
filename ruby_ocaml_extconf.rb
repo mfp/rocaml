@@ -59,9 +59,7 @@ end
 # needed by mkmf's create_makefile
 $LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}"
 
-create_makefile(EXT_NAME)
-
-File.open("Makefile", "a") do |f|
+File.open("depend", "w") do |f|
   f.puts <<EOF
 
 
@@ -119,3 +117,5 @@ include .depend
 EOF
 end
 
+
+create_makefile(EXT_NAME)
