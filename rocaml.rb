@@ -510,16 +510,17 @@ EOF
   end
 
   DEFAULT_OPTIONS = {
-    :dest => "ocaml_wrap.c",
-    :class => nil,
+    :dest => nil,
   }
 
+  # Options:
+  # dest:: name of destination .c file. NOTE that the generated Makefile
+  #        assumes it will match *_rocaml_wrapper.c in the distclean target.
   def initialize(extname, options = {})
     options = DEFAULT_OPTIONS.merge(options)
     @contexts   = []
     @extname    = extname
-    @dst_file   = options[:dest]
-    @class_name = options[:class] || extname.capitalize
+    @dst_file   = options[:dest] || "#{extname}_rocaml_wrapper.c"
   end
 
   def def_module(name, options = {}, &block)

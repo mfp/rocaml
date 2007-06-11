@@ -22,7 +22,7 @@ CAML_FLAGS = ""
 
 require 'rocaml'
 
-Interface.generate("foo", :dest => "foo_wrap.c") do
+Interface.generate("foo") do
   def_module("Foo", :under => "Some::NameSpace") do
     # foo : int -> int
     fun "foo", INT => INT

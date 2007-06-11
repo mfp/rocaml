@@ -24,7 +24,7 @@ $:.unshift "../.."
 
 require 'rocaml'
 
-Interface.generate("oo", :dest => "oo_wrap.c") do
+Interface.generate("oo") do
   def_class("Oo") do |c|
     fun "new_from_string", STRING => c.abstract_type
     fun "new", INT => c.abstract_type

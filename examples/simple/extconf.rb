@@ -24,7 +24,7 @@ $:.unshift "../.."
 
 require 'rocaml'
 
-Interface.generate("fib", :dest => "fib_wrap.c") do
+Interface.generate("fib") do
   def_module("Fib") do
     fun "fib", INT => INT
     fun "fib_map", [INT, INT] => ARRAY(INT)
