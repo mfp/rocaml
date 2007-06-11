@@ -39,8 +39,8 @@ Interface.generate("foo", :dest => "foo_wrap.c") do
   def_class("Bar", :under => "ACME") do |c|
     fun "bar", INT => INT
     fun "create", INT => c.abstract_type
-    # method "foo", c.abstract_type => INT
-    # method "bar", c.abstract_type => INT
+    method "foo", c.abstract_type => INT
+    method "bar", [c.abstract_type, INT] => INT
   end
 end
 
