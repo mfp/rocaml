@@ -20,7 +20,7 @@ CAML_LIBS = %[]
 # compilation flags
 CAML_FLAGS = ""
 
-require 'ruby_ocaml'
+require 'rocaml'
 
 Interface.generate("foo", :dest => "foo_wrap.c") do
   def_module("Foo", :under => "Some::NameSpace") do
@@ -44,4 +44,4 @@ Interface.generate("foo", :dest => "foo_wrap.c") do
   end
 end
 
-require 'ruby_ocaml_extconf'
+require 'rocaml_extconf'

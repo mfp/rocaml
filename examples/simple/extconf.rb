@@ -22,7 +22,7 @@ CAML_INCLUDES = %w[]
 
 $:.unshift "../.."
 
-require 'ruby_ocaml'
+require 'rocaml'
 
 Interface.generate("fib", :dest => "fib_wrap.c") do
   def_module("Fib") do
@@ -34,4 +34,4 @@ Interface.generate("fib", :dest => "fib_wrap.c") do
   end
 end
 
-require 'ruby_ocaml_extconf'
+require 'rocaml_extconf'

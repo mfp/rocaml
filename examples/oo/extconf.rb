@@ -22,7 +22,7 @@ CAML_INCLUDES = %w[]
 
 $:.unshift "../.."
 
-require 'ruby_ocaml'
+require 'rocaml'
 
 Interface.generate("oo", :dest => "oo_wrap.c") do
   def_class("Oo") do |c|
@@ -33,4 +33,4 @@ Interface.generate("oo", :dest => "oo_wrap.c") do
   end
 end
 
-require 'ruby_ocaml_extconf'
+require 'rocaml_extconf'
