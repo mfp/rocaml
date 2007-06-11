@@ -36,11 +36,21 @@ module Types
 
   class Bool < Type
     def caml_to_ruby(x)
-      "#{x} == Val_false ? Qfalse : Qtrue"
+      "Bool_val(#{x}) ? Qtrue : Qfalse"
     end
 
     def ruby_to_caml(x)
       "RTEST(#{x}) ? Val_true : Val_false"
+    end
+  end
+
+  class Float < Type
+    def caml_to_ruby(x)
+      "rb_float_new(Double_val(#{x}))"
+    end
+
+    def ruby_to_caml(x)
+      "caml_copy_double(RFLOAT(rb_Float(#{x}))->value)"
     end
   end
 
@@ -66,7 +76,29 @@ module Types
     end
 
     def caml_to_ruby_helper
-      <<EOF
+      if Float === @type
+        <<-EOF
+static VALUE
+#{@c_to_r_helper}(value v)
+{
+  CAMLparam1(v);
+  VALUE ret;
+  int siz;
+  int i;
+
+  siz = Wosize_val(v) / 2; /* 2 words per double; (size - 1) / 2 is wrong */
+  ret = rb_ary_new2(siz);
+  for(i = 0; i < siz; i++) {
+      RARRAY(ret)->ptr[i] = rb_float_new(Double_field(v, i));
+  }
+  RARRAY(ret)->len = siz;
+
+  CAMLreturn(ret);
+}
+
+        EOF
+      else
+        <<-EOF
 static VALUE
 #{@c_to_r_helper}(value v)
 {
@@ -85,12 +117,33 @@ static VALUE
   CAMLreturn(ret);
 }
 
-
-EOF
+        EOF
+      end
     end
 
     def ruby_to_caml_helper
-      <<EOF
+      if Float === @type
+        <<-EOF
+static value
+#{@r_to_c_helper}(VALUE v)
+{
+  CAMLparam0();
+  CAMLlocal1(ret);
+  int siz;
+  int i;
+
+  siz = RARRAY(v)->len;
+  ret = caml_alloc(siz * 2, Double_array_tag); /* 2 words per double */
+  for(i = 0; i < siz; i++) {
+      Store_double_field(ret, i, RFLOAT(rb_Float(RARRAY(v)->ptr[i]))->value);
+  }
+
+  CAMLreturn(ret);
+}
+
+        EOF
+      else
+        <<-EOF
 static value
 #{@r_to_c_helper}(VALUE v)
 {
@@ -108,8 +161,8 @@ static value
   CAMLreturn(ret);
 }
 
-
-EOF
+        EOF
+      end
     end
   end # Array
 
@@ -184,6 +237,7 @@ EOF
     BOOL = Bool.new
     STRING = String.new
     UNIT = Unit.new
+    FLOAT = Float.new
     def ARRAY(type); Array.new(type) end
     def ABSTRACT(name); Abstract.new(name) end
   end

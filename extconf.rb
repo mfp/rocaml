@@ -36,6 +36,10 @@ Interface.generate(EXT_NAME) do
     fun "foobar", UNIT => INT
     # barbaz : unit -> unit
     fun "barbaz", UNIT => UNIT
+    # flfoo : float -> float -> float
+    fun "flfoo", [FLOAT, FLOAT] => FLOAT
+    # flbar : float array -> float -> float array
+    fun "flbar", [ARRAY(FLOAT), FLOAT] => FLOAT
   end
 
   def_class("Bar", :under => "ACME") do |c|
