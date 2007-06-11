@@ -3,7 +3,7 @@
 ##
 ## Use and redistribution subject to the same conditions as Ruby.
 ## See the LICENSE file included in rocaml's distribution for more
-## information).
+## information.
 
 require 'mkmf'
 
