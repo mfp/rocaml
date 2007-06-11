@@ -531,7 +531,11 @@ EOF
 
   def def_class(name, options = {}, &block)
     c = Class.new(name, options)
-    c.instance_eval(&block)
+    if RUBY_VERSION >= "1.9.0"
+      c.instance_exec(c, &block)
+    else
+      c.instance_eval(&block)
+    end
     @contexts << c
   end
 
