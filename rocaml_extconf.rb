@@ -12,13 +12,17 @@ require 'mkmf'
 
 #EXT_NAME = "foo"          # extension name, XXX in   require 'XXX'
 #OCAML_PACKAGES = %w[]     # if non-empty, will use ocamlfind
-#CAML_LIBS = %[]           # some cmxa; auto-detection?
-#CAML_OBJS = %w[]          # list of .cmx
+#CAML_LIBS = %[]           # some cmxa
+#CAML_OBJS = %w[]          # list of .cmx, autodetected if empty
 #CAML_FLAGS = ""           # compilation flags
 #CAML_INCLUDES = %w[]      # -I options (-I must be prepended)
 
 
 CAML_TARGET = "#{EXT_NAME}_rocaml_runtime.o"
+if CAML_OBJS.empty?
+  objects = Dir["*.ml"].map{|s| s.sub(/\.ml$/, ".cmx")}
+  CAML_OBJS.replace(objects)
+end
 
 ocaml_native_lib_path = %w[
   /usr/lib/ocaml/**/libasmrun.a

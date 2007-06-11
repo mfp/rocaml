@@ -8,8 +8,8 @@ OCAML_PACKAGES = %w[]
 # cmxa
 CAML_LIBS = %[]
 
-# list of .cmx
-CAML_OBJS = %w[oo.cmx]
+# list of .cmx (autodetected if empty)
+CAML_OBJS = %w[]
 
 # compilation flags
 CAML_FLAGS = ""

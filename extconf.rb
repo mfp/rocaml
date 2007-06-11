@@ -2,7 +2,7 @@
 # extension name, XXX in  require 'XXX'
 EXT_NAME = "foo"
 
-# list of .cmx
+# list of .cmx files to be linked, inferred from available .ml if empty
 CAML_OBJS = %w[]
 
 # if non-empty, will use ocamlfind

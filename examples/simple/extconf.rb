@@ -8,8 +8,8 @@ OCAML_PACKAGES = %w[]
 # some cmxa; auto-detection?
 CAML_LIBS = %[]
 
-# list of .cmx
-CAML_OBJS = %w[fib.cmx]
+# list of .cmx (autodetected if empty)
+CAML_OBJS = %w[]
 
 # compilation flags
 CAML_FLAGS = ""
