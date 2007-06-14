@@ -6,7 +6,7 @@ EXT_NAME = "fib"
 OCAML_PACKAGES = %w[]
 
 # some cmxa; auto-detection?
-CAML_LIBS = %[]
+CAML_LIBS = %w[]
 
 # list of .cmx (autodetected if empty)
 CAML_OBJS = %w[]

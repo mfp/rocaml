@@ -17,7 +17,7 @@ OCAML_PACKAGES = %w[]
 CAML_INCLUDES = %w[]
 
 # cmxa libraries to use
-CAML_LIBS = %[]
+CAML_LIBS = %w[]
 
 # compilation flags
 CAML_FLAGS = ""

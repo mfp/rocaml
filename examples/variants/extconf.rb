@@ -6,7 +6,7 @@ EXT_NAME = "variants"
 OCAML_PACKAGES = %w[]
 
 # cmxa
-CAML_LIBS = %[]
+CAML_LIBS = %w[]
 
 # list of .cmx (autodetected if empty)
 CAML_OBJS = %w[]

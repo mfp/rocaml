@@ -19,7 +19,7 @@ require 'mkmf'
 
 #EXT_NAME = "foo"          # extension name, XXX in   require 'XXX'
 #OCAML_PACKAGES = %w[]     # if non-empty, will use ocamlfind
-#CAML_LIBS = %[]           # some cmxa
+#CAML_LIBS = %w[]          # some cmxa
 #CAML_OBJS = %w[]          # list of .cmx, autodetected if empty
 #CAML_FLAGS = ""           # compilation flags
 #CAML_INCLUDES = %w[]      # -I options (-I must be prepended)
@@ -55,7 +55,7 @@ else
 end
 
 def ocamlopt_ld_cmd(obj, *sources)
-  "#{OCAMLOPT} -output-obj -o #{obj} #{sources.join(" ")}"
+  "#{OCAMLOPT} -output-obj -o #{obj} #{sources.join(" ")} $(OCAML_LIBS)"
 end
 
 CAML_OBJS.push("rubyOCamlUtil.cmx") unless CAML_OBJS.include?("rubyOCamlUtil.cmx")
@@ -87,6 +87,7 @@ OCAMLOPT = #{OCAMLOPT}
 OCAMLDEP = #{OCAMLDEP}
 OFLAGS   = #{CAML_FLAGS}
 OCAML_INCLUDES = #{CAML_INCLUDES.join(" ")}
+OCAML_LIBS     = #{CAML_LIBS.join(" ")}
 
 OCAML_TARGET = #{CAML_TARGET}
 
@@ -99,16 +100,16 @@ $(OCAML_TARGET): #{CAML_OBJS.join(" ")} #{CAML_OBJS.map{|x| x.sub(/\.cmx$/, ".o"
 .SUFFIXES: .c .m .cc .cxx .cpp .C .o .mli .ml .cmi .cmo .cmx
 
 .mli.cmi:
-	$(OCAMLC) -c $(BFLAGS) $<
+	$(OCAMLC) -c $(BFLAGS) $(OCAML_INCLUDES) $<
 
 .ml.cmo:
-	$(OCAMLC) -c $(BFLAGS) $<
+	$(OCAMLC) -c $(BFLAGS) $(OCAML_INCLUDES) $<
 
 .ml.o:
-	$(OCAMLOPT) -c $(OFLAGS) $<
+	$(OCAMLOPT) -c $(OFLAGS) $(OCAML_INCLUDES) $<
 
 .ml.cmx:
-	$(OCAMLOPT) -c $(OFLAGS) $<
+	$(OCAMLOPT) -c $(OFLAGS) $(OCAML_INCLUDES) $<
 
 # clean
 
