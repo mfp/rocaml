@@ -29,10 +29,12 @@ Interface.generate("variants") do |iface|
   end
 
   def_class("DummyBase", :under => "Variants") do |c|
-    fun "create", UNIT => c.abstract_type
+    fun "create", UNIT => c.abstract_type, :aliased_as => "new"
 
-    method "set_kind", [c.abstract_type, iface.type("kind")] => UNIT
-    method "get_kind", c.abstract_type => iface.type("kind")
+    method "set_kind", [c.abstract_type, iface.type("kind")] => UNIT,
+           :aliased_as => "kind="
+    method "get_kind", c.abstract_type => iface.type("kind"),
+           :aliased_as => "kind"
   end
 end
 
