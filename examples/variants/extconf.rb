@@ -22,7 +22,7 @@ $:.unshift "../.."
 require 'rocaml'
 
 Interface.generate("variants") do |iface|
-  type = variant("kind") do
+  kind = variant("kind") do
     constant :Foo
     constant :Bar
     constant :Baz
@@ -31,10 +31,12 @@ Interface.generate("variants") do |iface|
   def_class("DummyBase", :under => "Variants") do |c|
     fun "create", UNIT => c.abstract_type, :aliased_as => "new"
 
-    method "set_kind", [c.abstract_type, iface.type("kind")] => UNIT,
+    method "set_kind", [c.abstract_type, kind] => UNIT,
            :aliased_as => "kind="
     method "get_kind", c.abstract_type => iface.type("kind"),
            :aliased_as => "kind"
+    method "tuple", c.abstract_type => TUPLE(INT, kind, STRING)
+    method "send_tuple", [c.abstract_type, TUPLE(INT, kind, STRING)] => UNIT
   end
 end
 
