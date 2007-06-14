@@ -5,6 +5,17 @@
 ## See the LICENSE file included in rocaml's distribution for more
 ## information.
 
+class Object
+  # instance_eval doesn't pass self to the block in 1.9 (might be fixed)
+  def do_instance_eval(&block)
+    if RUBY_VERSION >= "1.9.0"
+      self.instance_exec(self, &block)
+    else
+      self.instance_eval(&block)
+    end
+  end
+end
+
 module Types
   class Type
     def name; self.class.name.split(/::/).last end
@@ -722,7 +733,7 @@ EOF
 
   def self.define(*args, &block)
     ret = new(*args)
-    ret.instance_eval(&block)
+    ret.do_instance_eval(&block)
     ret
   end
 
@@ -752,11 +763,7 @@ EOF
 
   def def_class(name, options = {}, &block)
     c = Class.new(name, options)
-    if RUBY_VERSION >= "1.9.0"
-      c.instance_exec(c, &block)
-    else
-      c.instance_eval(&block)
-    end
+    c.do_instance_eval(&block)
     @contexts << c
   end
 
