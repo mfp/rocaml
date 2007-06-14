@@ -11,6 +11,10 @@ module Types
     def need_helper?
       false
     end
+
+    def ruby_to_caml_safe(x, status)
+      ruby_to_caml(x)
+    end
   end
 
   class Unit < Type
@@ -19,11 +23,47 @@ module Types
   end
 
   class Int < Type
+    def need_helper?
+      true
+    end
     def caml_to_ruby(x); "INT2NUM(Int_val(#{x}))" end
     def ruby_to_caml(x); "Val_int(NUM2INT(#{x}))" end
+
+    def ruby_to_caml_safe(x, status)
+      "int_ruby_to_caml(#{x}, #{status})"
+    end
+
+    def caml_to_ruby_helper
+      ""
+    end
+
+    def ruby_to_caml_helper
+      <<-EOF
+static value
+int_ruby_to_caml(VALUE v, int *status)
+{
+  CAMLparam0();
+  int tmp;
+
+  if(FIXNUM_P(v)) {
+      CAMLreturn(Val_int(FIX2INT(v)));
+  }
+
+  /* need conversion */
+  tmp = (int) rb_protect((VALUE (*)(VALUE))rb_num2long, v, status);
+  /* if it fails, the caller will know through status */
+  CAMLreturn(Val_long(tmp));
+}
+
+      EOF
+    end
   end
 
   class String < Type
+    def need_helper?
+      true
+    end
+
     def caml_to_ruby(x)
       "rb_str_new2(String_val(#{x}))"
     end
@@ -31,6 +71,36 @@ module Types
     def ruby_to_caml(x)
       # TODO: use StringValueCStr ?? involves extra strlen
       "caml_copy_string(StringValuePtr(#{x}))"
+    end
+
+    def caml_to_ruby_helper
+      ""
+    end
+
+    def ruby_to_caml_helper
+      <<-EOF
+static value
+string_ruby_to_caml_safe(VALUE s, int *status)
+{
+  char *r;
+  CAMLparam0();
+  CAMLlocal1(ret);
+
+  r = (char *)rb_protect((VALUE (*)(VALUE)) rb_string_value_ptr, (VALUE *)#{x}, &#{status});
+  if(!*status) {
+      ret = caml_copy_string(r);
+  } else {
+      ret = Val_false;
+  }
+
+  CAMLreturn(ret);
+}
+
+      EOF
+    end
+
+    def ruby_to_caml_safe(x, status)
+      "string_ruby_to_caml_safe(#{x}, #{status})"
     end
   end
 
@@ -45,12 +115,45 @@ module Types
   end
 
   class Float < Type
+    def need_helper?
+      true
+    end
+
     def caml_to_ruby(x)
       "rb_float_new(Double_val(#{x}))"
     end
 
     def ruby_to_caml(x)
       "caml_copy_double(RFLOAT(rb_Float(#{x}))->value)"
+    end
+
+    def caml_to_ruby_helper
+      ""
+    end
+
+    def ruby_to_caml_helper
+      <<-EOF
+static
+value safe_rbFloat_to_caml(VALUE v, int *status)
+{
+  VALUE r;
+  CAMLparam0();
+  CAMLlocal1(ret);
+
+  r = rb_protect(rb_Float, v, status);
+  if(!*status) {
+      ret = caml_copy_double(RFLOAT(r)->value);
+  } else {
+      ret = Val_false;
+  }
+
+  CAMLreturn(ret);
+}
+      EOF
+    end
+
+    def ruby_to_caml_safe(x, status)
+      "safe_rbFloat_to_caml(#{x}, #{status})"
     end
   end
 
@@ -141,6 +244,29 @@ static value
   CAMLreturn(ret);
 }
 
+static value
+#{@r_to_c_helper}_safe(VALUE v, int *status)
+{
+  int siz;
+  int i;
+  CAMLparam0();
+  CAMLlocal2(ret, camlv);
+
+  siz = RARRAY(v)->len;
+  ret = caml_alloc(siz * 2, Double_array_tag); /* 2 words per double */
+  for(i = 0; i < siz; i++) {
+      int s = 0;
+
+      camlv = #{@type.ruby_to_caml_safe("RARRAY(v)->ptr[i]", "&s")};
+      if(s) {
+        *status = s;
+        CAMLreturn(Val_false);
+      }
+      Store_double_field(ret, i, camlv);
+  }
+
+  CAMLreturn(ret);
+}
         EOF
       else
         <<-EOF
@@ -156,6 +282,30 @@ static value
   ret = caml_alloc(siz, 0);
   for(i = 0; i < siz; i++) {
       Store_field(ret, i, #{@type.ruby_to_caml("RARRAY(v)->ptr[i]")});
+  }
+
+  CAMLreturn(ret);
+}
+
+static value
+#{@r_to_c_helper}_safe(VALUE v, int *status)
+{
+  CAMLparam0();
+  CAMLlocal2(ret, camlv);
+  int siz;
+  int i;
+
+  siz = RARRAY(v)->len;
+  ret = caml_alloc(siz, 0);
+  for(i = 0; i < siz; i++) {
+      int s = 0;
+
+      camlv = #{@type.ruby_to_caml_safe("RARRAY(v)->ptr[i]", "&s")};
+      if(s) {
+        *status = s;
+        CAMLreturn(Val_false);
+      }
+      Store_field(ret, i, camlv);
   }
 
   CAMLreturn(ret);
@@ -250,11 +400,17 @@ include Types::Exported
 class Mapping
   attr_reader :src, :dst, :name, :pass_self
 
-  def initialize(name, src_type, dst_type, pass_self)
+  DEFAULT_OPTIONS = {
+    :safe => true,
+  }
+
+  def initialize(name, src_type, dst_type, pass_self, options = {})
+    options = DEFAULT_OPTIONS.merge(options)
     @name = name
     @src = src_type
     @dst = dst_type
     @pass_self = pass_self
+    @safe = options[:safe]
   end
 
   def mangled_name(prefix)
@@ -270,7 +426,7 @@ class Mapping
     end
     <<EOF
 VALUE #{mangled_name(prefix)}_ex
-      (VALUE *exception, #{fmt[formal_args]})
+      (VALUE *exception, int *status, #{fmt[formal_args]})
 {
   CAMLparam0();
 #{locals(["ret"] + caml_param_list).join("\n")}
@@ -301,12 +457,15 @@ VALUE #{mangled_name(prefix)}
 {
   VALUE ret;
   VALUE exception = Qnil;
+  int status = 0;
 
-  ret = #{mangled_name(prefix)}_ex(&exception, #{formal_args.join(", ")});
+  ret = #{mangled_name(prefix)}_ex(&exception, &status, #{formal_args.join(", ")});
 
-  if(exception == Qnil) {
+  if(exception == Qnil && !status) {
     return ret;
-  } else {
+  } else if(status) { /* exception in Ruby -> caml conversions */
+    rb_jump_tag(status);
+  } else {            /* OCaml exception*/
     rb_raise(rb_eStandardError, StringValuePtr(exception));
   }
 
@@ -345,6 +504,14 @@ EOF
   end
 
   def prepare_callback(args)
+    if @safe
+      prepare_callback_safe(args)
+    else
+      prepare_callback_unsafe(args)
+    end
+  end
+
+  def prepare_callback_unsafe(args)
     case arity
     when 1
       "  #{caml_param_list.first} = " + @src.ruby_to_caml(param_list.first) + ";"
@@ -359,6 +526,32 @@ EOF
       i = 1
       param_list.map do |p|
         r = "  #{args}[#{i-1}] = " + @src[i-1].ruby_to_caml(p) + ";"
+        i += 1
+        r
+      end.join("\n")
+    end
+  end
+
+  def prepare_callback_safe(args)
+    case arity
+    when 1
+      <<-EOF
+  #{caml_param_list.first} = #{@src.ruby_to_caml_safe(param_list.first, "status")};
+  if(*status) CAMLreturn(Qnil);
+      EOF
+    when 2, 3
+      i = 1
+      caml_param_list.zip(param_list).map do |caml, ruby|
+        r = "  #{caml} = " + @src[i-1].ruby_to_caml_safe(ruby, "status") + ";" + "\n" +
+            "  if(*status) CAMLreturn(Qnil);"
+        i += 1
+        r
+      end.join("\n")
+    else
+      i = 1
+      param_list.map do |p|
+        r = "  #{args}[#{i-1}] = " + @src[i-1].ruby_to_caml_safe(p, "status") + ";" + "\n" +
+            "  if(*status) CAMLreturn(Qnil);"
         i += 1
         r
       end.join("\n")
