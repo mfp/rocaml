@@ -8,9 +8,6 @@
 module Types
   class Type
     def name; self.class.name.split(/::/).last end
-    def need_helper?
-      false
-    end
 
     def ruby_to_caml_safe(x, status)
       ruby_to_caml(x)
@@ -23,18 +20,11 @@ module Types
   end
 
   class Int < Type
-    def need_helper?
-      true
-    end
     def caml_to_ruby(x); "INT2NUM(Int_val(#{x}))" end
     def ruby_to_caml(x); "Val_int(NUM2INT(#{x}))" end
 
     def ruby_to_caml_safe(x, status)
       "int_ruby_to_caml(#{x}, #{status})"
-    end
-
-    def caml_to_ruby_helper
-      ""
     end
 
     def ruby_to_caml_helper
@@ -60,10 +50,6 @@ int_ruby_to_caml(VALUE v, int *status)
   end
 
   class String < Type
-    def need_helper?
-      true
-    end
-
     def caml_to_ruby(x)
       "rb_str_new2(String_val(#{x}))"
     end
@@ -71,10 +57,6 @@ int_ruby_to_caml(VALUE v, int *status)
     def ruby_to_caml(x)
       # TODO: use StringValueCStr ?? involves extra strlen
       "caml_copy_string(StringValuePtr(#{x}))"
-    end
-
-    def caml_to_ruby_helper
-      ""
     end
 
     def ruby_to_caml_helper
@@ -115,20 +97,12 @@ string_ruby_to_caml_safe(VALUE s, int *status)
   end
 
   class Float < Type
-    def need_helper?
-      true
-    end
-
     def caml_to_ruby(x)
       "rb_float_new(Double_val(#{x}))"
     end
 
     def ruby_to_caml(x)
       "caml_copy_double(RFLOAT(rb_Float(#{x}))->value)"
-    end
-
-    def caml_to_ruby_helper
-      ""
     end
 
     def ruby_to_caml_helper
@@ -162,10 +136,6 @@ value safe_rbFloat_to_caml(VALUE v, int *status)
       @type = el_type
       @c_to_r_helper = "#{@type.name.gsub(/\s+/, "")}_array_caml_to_ruby"
       @r_to_c_helper = "#{@type.name.gsub(/\s+/, "")}_array_ruby_to_caml"
-    end
-
-    def need_helper?
-      true
     end
 
     def name; "#{@type.name.gsub(/\s+/, "")} array" end
@@ -322,8 +292,6 @@ static value
       @name = name
     end
 
-    def need_helper?; true end
-
     def caml_to_ruby(x)
       "wrap_abstract_#{name}(#{x})"
     end
@@ -380,9 +348,7 @@ unwrap_abstract_#{name}(VALUE v)
 
 EOF
     end
-
   end
-
 
   module Exported
     INT = Int.new
@@ -645,13 +611,13 @@ class Interface
       when Array
         type.each{|x| emit_helper_aux(io, x, emitted, direction)}
       else
-        if type.need_helper? && !emitted[[direction, type.name]]
+        if !emitted[[direction, type.name]]
           emitted[[direction, type.name]] = true
           case direction
           when :caml_to_ruby
-            io.puts type.caml_to_ruby_helper
+            io.puts type.caml_to_ruby_helper if type.respond_to?(:caml_to_ruby_helper)
           else
-            io.puts type.ruby_to_caml_helper
+            io.puts type.ruby_to_caml_helper if type.respond_to?(:ruby_to_caml_helper)
           end
           io.puts
         end
