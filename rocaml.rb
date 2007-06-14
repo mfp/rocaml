@@ -361,6 +361,79 @@ EOF
     end
   end
 
+  class Variant
+    attr_reader :name
+    def initialize(name)
+      @name = name
+      @constant_constructors     = {}
+      @non_constant_constructors = {}
+    end
+
+    def constant(name)
+      raise "Repeated constant constructor #{name}" if @constant_constructors.has_key?(name)
+      @constant_constructors[name] = @constant_constructors.size
+    end
+
+    def non_constant(name, type)
+      raise "Repeated non-constant constructor #{name}" if @non_constant_constructors.has_key?(name)
+      @non_constant_constructors[name] = [@constant_constructors.size, type]
+    end
+
+    def constant_tag(name)
+      @constant_constructors[name]
+    end
+
+    def non_constant_tag(name)
+      @non_constant_constructors[name][0]
+    end
+
+    def non_constant_type(name)
+      @non_constant_constructors[name][1]
+    end
+
+    def ruby_to_caml(x)
+      # TODO: non-constant constructors
+      "Val_int(NUM2INT(#{x}))"
+    end
+
+    def ruby_to_caml_safe(x, status)
+      "#{name}_constant_ruby_to_caml(#{x}, #{status})"
+    end
+
+    def caml_to_ruby(x)
+      # TODO: non-constant constructors
+      "INT2FIX(Int_val(#{x}))"
+    end
+
+    def ruby_to_caml_helper
+      <<-EOF
+static VALUE
+#{name}_do_raise(VALUE wrong_tag)
+{
+  rb_raise(rb_eRuntimeError, "Tag %d isn't defined for variant '#{name}'", FIX2INT(wrong_tag));
+}
+
+static value
+#{name}_constant_ruby_to_caml(VALUE v, int *status)
+{
+  int tag;
+  CAMLparam0();
+
+  tag = (int) rb_protect((VALUE (*)(VALUE))rb_num2long, v, status);
+  if(*status) CAMLreturn(Val_false);
+
+  if(tag < 0 || tag >= #{@constant_constructors.size}) {
+    rb_protect(#{name}_do_raise, tag, status);
+    CAMLreturn(Val_false);
+    /* this will signal the error through status; the caller must handle it */
+  }
+  CAMLreturn(Val_int(tag));
+}
+
+      EOF
+    end
+  end
+
   module Exported
     INT = Int.new
     BOOL = Bool.new
@@ -749,10 +822,21 @@ EOF
   # dest:: name of destination .c file. NOTE that the generated Makefile
   #        assumes it will match *_rocaml_wrapper.c in the distclean target.
   def initialize(extname, options = {})
-    options = DEFAULT_OPTIONS.merge(options)
-    @contexts   = []
-    @extname    = extname
-    @dst_file   = options[:dest] || "#{extname}_rocaml_wrapper.c"
+    options   = DEFAULT_OPTIONS.merge(options)
+    @contexts = []
+    @types    = {}
+    @extname  = extname
+    @dst_file = options[:dest] || "#{extname}_rocaml_wrapper.c"
+  end
+
+  def type(name)
+    @types[name]
+  end
+
+  def variant(name, &block)
+    variant = Types::Variant.new(name)
+    variant.instance_eval(&block)
+    @types[name] = variant
   end
 
   def def_module(name, options = {}, &block)
@@ -780,7 +864,8 @@ EOF
  * This file will be overwritten by rocaml when you run extconf.rb.
  */
 
-#include "ruby.h"
+#include <ruby.h>
+#include <st.h>
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
