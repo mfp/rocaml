@@ -72,7 +72,13 @@ end
 # needed by mkmf's create_makefile
 $LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}"
 
-File.open("depend", "w") do |f|
+if File.exist?("depend.in")
+  File.open("depend", "w"){|f| f.print File.read("depend.in") }
+else
+  File.open("depend", "w"){|f| } # overwrite previous
+end
+
+File.open("depend", "a") do |f|
   f.puts <<EOF
 
 

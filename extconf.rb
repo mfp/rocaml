@@ -3,6 +3,9 @@
 # Copy to your extension directory and modify as needed. In general, only
 # EXT_NAME needs to be changed (in addition to the generated interface of
 # course).
+#
+# The contents of the  depend.in  file (if existent) will be prepended to the
+# rules that build the OCaml targets (near the end of the generated Makefile).
 
 # extension name, XXX in  require 'XXX'
 EXT_NAME = "foo"
