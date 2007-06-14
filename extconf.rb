@@ -45,8 +45,8 @@ Interface.generate(EXT_NAME) do
   def_class("Bar", :under => "ACME") do |c|
     # ACME::Bar.bar
     fun "bar", INT => INT
-    # ACME::Bar.create, takes int, return ACME::Bar instance
-    fun "create", INT => c.abstract_type
+    # ACME::Bar.new, takes int, return ACME::Bar instance
+    fun "create", INT => c.abstract_type, :aliased_as => "new"
     # ACME::Bar#foo instance method
     method "foo", c.abstract_type => INT
     # ACME::Bar#bar instance method, taking an integer argument.
