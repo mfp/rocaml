@@ -79,7 +79,7 @@ string_ruby_to_caml_safe(VALUE s, int *status)
   CAMLparam0();
   CAMLlocal1(ret);
 
-  r = (char *)rb_protect((VALUE (*)(VALUE)) rb_string_value_ptr, &s, status);
+  r = (char *)rb_protect((VALUE (*)(VALUE)) rb_string_value_ptr, (VALUE)&s, status);
   if(!*status) {
       ret = caml_copy_string(r);
   } else {
