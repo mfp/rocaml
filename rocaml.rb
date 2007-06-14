@@ -391,7 +391,7 @@ EOF
     end
   end
 
-  class Variant
+  class Variant < Type
     attr_reader :name
     def initialize(name)
       @name = name
