@@ -16,12 +16,38 @@ class Object
   end
 end
 
+
+module CodeGeneratorHelper
+  def def_aux(name, params, acc = [])
+    return acc if params.empty?
+    5.downto(1) do |i|
+      if params.size >= i then
+        return locals(params[i..-1],
+                      acc + ["  #{name}#{i}(" + params[0, i].join(", ") + ");"])
+      end
+    end
+    acc # shouldn't happen
+  end
+
+  def locals(vars, acc = [])
+    def_aux("CAMLlocal", vars, acc)
+  end
+
+  def params(params, acc = [])
+    def_aux("CAMLparam", params, acc)
+  end
+end
+
 module Types
   class Type
     def name; self.class.name.split(/::/).last end
 
     def ruby_to_caml_safe(x, status)
       ruby_to_caml(x)
+    end
+
+    def type_dependencies
+      []
     end
   end
 
@@ -147,6 +173,10 @@ value safe_rbFloat_to_caml(VALUE v, int *status)
       @type = el_type
       @c_to_r_helper = "#{@type.name.gsub(/\s+/, "")}_array_caml_to_ruby"
       @r_to_c_helper = "#{@type.name.gsub(/\s+/, "")}_array_ruby_to_caml"
+    end
+
+    def type_dependencies
+      @type
     end
 
     def name; "#{@type.name.gsub(/\s+/, "")} array" end
@@ -448,6 +478,7 @@ end
 include Types::Exported
 
 class Mapping
+  include CodeGeneratorHelper
   attr_reader :src, :dst, :name, :pass_self
 
   DEFAULT_OPTIONS = {
@@ -610,25 +641,6 @@ EOF
     end
   end
 
-  def def_aux(name, params, acc = [])
-    return acc if params.empty?
-    5.downto(1) do |i|
-      if params.size >= i then
-        return locals(params[i..-1],
-                      acc + ["  #{name}#{i}(" + params[0, i].join(", ") + ");"])
-      end
-    end
-    acc # shouldn't happen
-  end
-
-  def locals(vars, acc = [])
-    def_aux("CAMLlocal", vars, acc)
-  end
-
-  def params(params, acc = [])
-    def_aux("CAMLparam", params, acc)
-  end
-
   def caml_param_list
     if @pass_self
       ["caml_self"] + (1...arity).map{|i| "caml_param#{i}"}
@@ -664,7 +676,6 @@ class Interface
       def_helper(name, types_and_options, true)
     end
 
-
     def container_name
       raise "Must be redefined"
     end
@@ -693,20 +704,33 @@ class Interface
     end
 
     def emit_helper_aux(io, type, emitted, direction)
+      if Types::Type === type && emitted[[direction, type.name]]
+        return
+      end
+      if Types::Type === type
+        puts "emitting helper #{type.name}(#{direction})"
+      end
+
       case type
       when Array
         type.each{|x| emit_helper_aux(io, x, emitted, direction)}
+      #when Types::Type
       else
-        if !emitted[[direction, type.name]]
-          emitted[[direction, type.name]] = true
-          case direction
-          when :caml_to_ruby
-            io.puts type.caml_to_ruby_helper if type.respond_to?(:caml_to_ruby_helper)
-          else
-            io.puts type.ruby_to_caml_helper if type.respond_to?(:ruby_to_caml_helper)
-          end
-          io.puts
+        type.type_dependencies.each do |t|
+          emit_helper_aux(io, t, emitted, direction)
         end
+
+        case direction
+        when :caml_to_ruby
+          io.puts type.caml_to_ruby_helper if type.respond_to?(:caml_to_ruby_helper)
+        else
+          io.puts type.ruby_to_caml_helper if type.respond_to?(:ruby_to_caml_helper)
+        end
+        io.puts
+      end
+
+      if Types::Type === type
+        emitted[[direction, type.name]] = true
       end
     end
 
@@ -725,7 +749,6 @@ class Interface
       to   = types_and_options[from]
       @mappings << Mapping.new(name, from, to, pass_self, options)
     end
-
   end
 
   class Class < Context
