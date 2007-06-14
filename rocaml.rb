@@ -464,6 +464,86 @@ static value
     end
   end
 
+  class Tuple < Type
+    include CodeGeneratorHelper
+
+    attr_reader :name
+    def initialize(*types)
+      @name = (types.map{|x| x.name} + ["tuple"]).join("_")
+      @types = types
+    end
+
+    def type_dependencies
+      @types
+    end
+
+    def ruby_to_caml_helper
+      conversions = (0...@types.size).map do |idx|
+        <<-EOF
+  Store_field(ret, #{idx}, #{@types[idx].ruby_to_caml_safe("RARRAY(v)->ptr[#{idx}]", "status")});
+  if(status && *status) CAMLreturn(Val_false);
+        EOF
+      end.join("\n")
+
+      <<-EOF
+static VALUE
+#{name}_do_raise(char *s)
+{
+  rb_raise(rb_eRuntimeError, "%s", s);
+}
+
+static value
+#{name}_ruby_to_caml(VALUE v, int *status)
+{
+  CAMLparam0();
+  CAMLlocal1(ret);
+
+  if(TYPE(v) != T_ARRAY || RARRAY(v)->len != #{@types.size}) {
+    rb_protect((VALUE (*)(VALUE))#{name}_do_raise,
+               (VALUE)"#{name} must be a #{@types.size}-element array",
+               status);
+    CAMLreturn(Val_false);
+  }
+
+  ret = caml_alloc(#{@types.size}, 0);
+#{conversions}
+  CAMLreturn(ret);
+}
+      EOF
+    end
+
+    def caml_to_ruby_helper
+      conversions = (0...@types.size).map do |i|
+        %[  rb_ary_push(ret, #{@types[i].caml_to_ruby("Field(v, #{i})")});]
+      end.join("\n")
+
+      <<-EOF
+static VALUE
+#{name}_caml_to_ruby(value v)
+{
+  VALUE ret;
+  CAMLparam1(v);
+
+  ret = rb_ary_new();
+#{conversions}
+  CAMLreturn(ret);
+}
+      EOF
+    end
+
+    def caml_to_ruby(x)
+      "#{name}_caml_to_ruby(#{x})"
+    end
+
+    def ruby_to_caml(x)
+      "#{name}_ruby_to_caml(#{x}, NULL)"
+    end
+
+    def ruby_to_caml_safe(x, status)
+      "#{name}_ruby_to_caml(#{x}, #{status})"
+    end
+  end
+
   module Exported
     INT = Int.new
     BOOL = Bool.new
@@ -472,6 +552,7 @@ static value
     FLOAT = Float.new
     def ARRAY(type); Array.new(type) end
     def ABSTRACT(name); Abstract.new(name) end
+    def TUPLE(*types); Tuple.new(*types) end
   end
 end
 
