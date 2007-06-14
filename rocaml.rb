@@ -452,11 +452,13 @@ class Mapping
 
   DEFAULT_OPTIONS = {
     :safe => true,
+    :aliased_as => nil
   }
 
   def initialize(name, src_type, dst_type, pass_self, options = {})
     options = DEFAULT_OPTIONS.merge(options)
-    @name = name
+    @name = options[:aliased_as] || name
+    @caml_name = name
     @src = src_type
     @dst = dst_type
     @pass_self = pass_self
@@ -464,7 +466,7 @@ class Mapping
   end
 
   def mangled_name(prefix)
-    prefix + "_wrapper__" + (@pass_self ? "" : "s_") + @name.gsub(/\./, "_")
+    prefix + "_wrapper__" + (@pass_self ? "" : "s_") + @caml_name.gsub(/\./, "_")
   end
 
   def generate(prefix)
@@ -484,9 +486,9 @@ VALUE #{mangled_name(prefix)}_ex
   static value *closure = NULL;
 
   if(closure == NULL) {
-    closure = caml_named_value("#{prefix}.#{@name}");
+    closure = caml_named_value("#{prefix}.#{@caml_name}");
     if(closure == NULL) {
-      *exception = rb_str_new2("Couldn't find OCaml value '#{prefix}.#{@name}'.");
+      *exception = rb_str_new2("Couldn't find OCaml value '#{prefix}.#{@caml_name}'.");
       CAMLreturn(Qnil);
     }
   }
@@ -709,12 +711,19 @@ class Interface
     end
 
     private
+
+    PROPAGATED_OPTIONS = [:safe, :aliased_as]
+
     def def_helper(name, types_and_options, pass_self)
       types_and_options = types_and_options.clone
       raise "Want a type => type mapping" unless Hash === types_and_options
+      options = {}
+      PROPAGATED_OPTIONS.each do |k|
+        options[k] = types_and_options.delete(k) if types_and_options.has_key?(k)
+      end
       from = types_and_options.keys.first
       to   = types_and_options[from]
-      @mappings << Mapping.new(name, from, to, pass_self)
+      @mappings << Mapping.new(name, from, to, pass_self, options)
     end
 
   end
