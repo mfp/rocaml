@@ -987,6 +987,28 @@ EOF
 EOF
       @contexts.each{|c| c.emit_container_declaration(f)}
       f.puts <<EOF
+static VALUE
+do_raise_exception(VALUE klass, char *s)
+{
+  rb_raise(klass, "%s", s);
+  return Qnil; /* not reached */
+}
+
+static VALUE
+do_raise_exception_tag_aux(VALUE *args)
+{
+  rb_raise(args[0], "%s", StringValuePtr(args[1]));
+  return Qnil;
+}
+
+static VALUE
+do_raise_exception_tag(VALUE klass, char *s, int *status)
+{
+  VALUE args[2];
+  args[0] = klass;
+  args[1] = rb_str_new2(s);
+  rb_protect((VALUE (*)(VALUE))do_raise_exception, (VALUE)args, status);
+}
 
 static VALUE
 ocaml_exception_string(value exn)
