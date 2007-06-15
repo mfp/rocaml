@@ -447,9 +447,15 @@ EOF
 
     def caml_to_ruby_helper
       non_constant_cases = (0...@types.size).map do |i|
+        case @types[i].size
+        when 1
+          convert = "rb_ary_push(ret, RARRAY(#{@types[i].caml_to_ruby("v")})->ptr[0]);"
+        else
+          convert = "rb_ary_push(ret, #{@types[i].caml_to_ruby("v")});"
+        end
         <<-EOF
   case #{i}:
-    rb_ary_push(ret, #{@types[i].caml_to_ruby("v")});
+    #{convert}
     CAMLreturn(ret);
         EOF
       end.join("\n")
@@ -567,6 +573,10 @@ static value
       @types = types
     end
 
+    def size
+      @types.size
+    end
+
     def with_tag(tag)
       self.class.new(*(@types + [tag]))
     end
@@ -596,9 +606,12 @@ static value
   CAMLparam0();
   CAMLlocal1(ret);
 
+  v = rb_protect(rb_Array, v, status);
+  if(status && *status) CAMLreturn(Val_false);
+
   if(TYPE(v) != T_ARRAY || RARRAY(v)->len != #{@types.size}) {
     rb_protect((VALUE (*)(VALUE))#{name}_do_raise,
-               (VALUE)"#{name} must be a #{@types.size}-element array",
+               (VALUE)"Conversion to OCaml with #{name} needs a #{@types.size}-element array",
                status);
     CAMLreturn(Val_false);
   }

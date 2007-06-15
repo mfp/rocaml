@@ -19,7 +19,7 @@ puts "non-constant constructors"
 o.kind = [Barbaz, [42, "whatever"]]
 puts "checking"
 p o.kind
-o.kind = [Foobar, ["string"]]
+o.kind = [Foobar, "string"]
 p o.kind
 
 puts "Testing tuples"
