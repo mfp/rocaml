@@ -397,6 +397,11 @@ EOF
       @name = name
       @constant_constructors     = {}
       @non_constant_constructors = {}
+      @types = []
+    end
+
+    def type_dependencies
+      @types
     end
 
     def constant(name)
@@ -406,7 +411,13 @@ EOF
 
     def non_constant(name, type)
       raise "Repeated non-constant constructor #{name}" if @non_constant_constructors.has_key?(name)
-      @non_constant_constructors[name] = [@constant_constructors.size, type]
+      if Types::Tuple === type
+        type = type.with_tag(@types.size)
+      else
+        type = Types::Tuple.new(type).with_tag(@types.size)
+      end
+      @non_constant_constructors[name] = [@types.size, type]
+      @types << type
     end
 
     def constant_tag(name)
@@ -422,20 +433,59 @@ EOF
     end
 
     def ruby_to_caml(x)
-      # TODO: non-constant constructors
-      "Val_int(NUM2INT(#{x}))"
+      "#{name}_ruby_to_caml(#{x}, NULL)"
     end
 
     def ruby_to_caml_safe(x, status)
-      "#{name}_constant_ruby_to_caml(#{x}, #{status})"
+      "#{name}_ruby_to_caml(#{x}, #{status})"
     end
 
     def caml_to_ruby(x)
       # TODO: non-constant constructors
-      "INT2FIX(Int_val(#{x}))"
+      "#{name}_caml_to_ruby(#{x})"
+    end
+
+    def caml_to_ruby_helper
+      non_constant_cases = (0...@types.size).map do |i|
+        <<-EOF
+  case #{i}:
+    rb_ary_push(ret, #{@types[i].caml_to_ruby("v")});
+    CAMLreturn(ret);
+        EOF
+      end.join("\n")
+      <<-EOF
+static VALUE
+#{name}_caml_to_ruby(value v)
+{
+  VALUE ret;
+  CAMLparam1(v);
+
+  if(Is_long(v)) {
+    CAMLreturn(INT2FIX(Int_val(v)));
+  }
+
+  ret = rb_ary_new();
+  rb_ary_push(ret, INT2FIX(Tag_val(v)));
+  switch(Tag_val(v)) {
+#{non_constant_cases}
+    default:
+      rb_warning("Unknown tag for type #{name}, returning nil. Check your OCaml interface definition");
+      CAMLreturn(Qnil);
+  }
+}
+      EOF
     end
 
     def ruby_to_caml_helper
+      non_constant_tag_cases = (0...@types.size).map do |i|
+        <<-EOF
+  case #{i}:
+    camlval = #{@types[i].ruby_to_caml_safe("RARRAY(tuple)->ptr[1]", "status")};
+    if(status && *status) CAMLreturn(Val_false); /* normally redundant */
+    CAMLreturn(camlval);
+        EOF
+      end.join("\n")
+
       <<-EOF
 static VALUE
 #{name}_do_raise(VALUE wrong_tag)
@@ -458,6 +508,43 @@ static value
     /* this will signal the error through status; the caller must handle it */
   }
   CAMLreturn(Val_int(tag));
+}
+
+static value
+#{name}_non_constant_ruby_to_caml(VALUE v, int *status)
+{
+  VALUE tuple;
+  int tag;
+  CAMLparam0();
+  CAMLlocal1(camlval);
+
+  tuple = rb_protect(rb_Array, v, status);
+  if(status && *status) CAMLreturn(Val_false);
+  if(RARRAY(tuple)->len != 2 || TYPE(RARRAY(tuple)->ptr[0]) != T_FIXNUM) {
+    do_raise_exception_tag(rb_eRuntimeError,
+                           "Non-constant constructor expects a 2-element array [TAG, VALUE]",
+                           status);
+    CAMLreturn(Val_false);
+  }
+
+  tag = FIX2INT(RARRAY(tuple)->ptr[0]);
+  switch(tag) {
+#{non_constant_tag_cases}
+  default:
+    rb_protect(#{name}_do_raise, tag, status);
+    CAMLreturn(Val_false);
+  }
+}
+
+static value
+#{name}_ruby_to_caml(VALUE v, int *status)
+{
+ CAMLparam0();
+
+ if(TYPE(v) == T_FIXNUM) {
+   CAMLreturn(#{name}_constant_ruby_to_caml(v, status));
+ }
+ CAMLreturn(#{name}_non_constant_ruby_to_caml(v, status));
 }
 
       EOF
