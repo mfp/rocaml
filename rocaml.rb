@@ -176,7 +176,7 @@ value safe_rbFloat_to_caml(VALUE v, int *status)
     end
 
     def type_dependencies
-      @type
+      [@type]
     end
 
     def name; "#{@type.name.gsub(/\s+/, "")} array" end
