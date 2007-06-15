@@ -469,7 +469,7 @@ static value
 
     attr_reader :name
     def initialize(*types)
-      @name = (types.map{|x| x.name} + ["tuple"]).join("_")
+      @name = (["t"] + types.map{|x| x.name} + ["tuple"]).join("_")
       @types = types
     end
 
