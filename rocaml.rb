@@ -469,8 +469,19 @@ static value
 
     attr_reader :name
     def initialize(*types)
-      @name = (["t"] + types.map{|x| x.name} + ["tuple"]).join("_")
+      if Numeric === types.last
+        @tag = types.last
+        types = types[0..-2]
+        @name = (["t"] + types.map{|x| x.name} + ["tuple#{@tag}"]).join("_")
+      else
+        @tag = 0
+        @name = (["t"] + types.map{|x| x.name} + ["tuple"]).join("_")
+      end
       @types = types
+    end
+
+    def with_tag(tag)
+      self.class.new(*(@types + [tag]))
     end
 
     def type_dependencies
@@ -505,7 +516,7 @@ static value
     CAMLreturn(Val_false);
   }
 
-  ret = caml_alloc(#{@types.size}, 0);
+  ret = caml_alloc(#{@types.size}, #{@tag});
 #{conversions}
   CAMLreturn(ret);
 }
