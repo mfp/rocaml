@@ -1,6 +1,6 @@
 open Printf
 
-type kind = Foo | Bar | Baz
+type kind = Foo | Bar | Baz | Foobar of string | Barbaz of int * string
 
 type t = { mutable kind : kind }
 
@@ -8,13 +8,15 @@ let string_of_kind = function
     Foo -> "Foo"
   | Bar -> "Bar"
   | Baz -> "Baz"
+  | Foobar s -> sprintf "Foobar \"%s\"" s
+  | Barbaz (i, s) -> sprintf "Barbaz (%d, \"%s\")" i s
 
 let create kind = { kind = Foo }
 
 let get_kind t = t.kind
 
 let set_kind t k =
-  printf "set kind to %s\n" (string_of_kind k);
+  printf "set kind to %s\n%!" (string_of_kind k);
   t.kind <- k
 
 let tuple t = (42, t.kind, "foo")

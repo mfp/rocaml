@@ -26,6 +26,8 @@ Interface.generate("variants") do |iface|
     constant :Foo
     constant :Bar
     constant :Baz
+    non_constant :Foobar, STRING
+    non_constant :Barbaz, TUPLE(INT, STRING)
   end
 
   def_class("DummyBase", :under => "Variants") do |c|
