@@ -64,6 +64,13 @@ module Types
       "int_ruby_to_caml(#{x}, #{status})"
     end
 
+    def ruby_to_caml_prototype
+      <<-EOF
+static value int_ruby_to_caml(VALUE v, int *status);
+
+      EOF
+    end
+
     def ruby_to_caml_helper
       <<-EOF
 static value
@@ -94,6 +101,13 @@ int_ruby_to_caml(VALUE v, int *status)
     def ruby_to_caml(x)
       # TODO: use StringValueCStr ?? involves extra strlen
       "caml_copy_string(StringValuePtr(#{x}))"
+    end
+
+    def ruby_to_caml_prototype
+      <<-EOF
+static value string_ruby_to_caml_safe(VALUE s, int *status);
+
+      EOF
     end
 
     def ruby_to_caml_helper
@@ -140,6 +154,13 @@ string_ruby_to_caml_safe(VALUE s, int *status)
 
     def ruby_to_caml(x)
       "caml_copy_double(RFLOAT(rb_Float(#{x}))->value)"
+    end
+
+    def ruby_to_caml_prototype
+      <<-EOF
+static value safe_rbFloat_to_caml(VALUE v, int *status);
+
+      EOF
     end
 
     def ruby_to_caml_helper
@@ -189,6 +210,13 @@ value safe_rbFloat_to_caml(VALUE v, int *status)
       "#{@r_to_c_helper}(#{x})"
     end
 
+    def caml_to_ruby_prototype
+      <<-EOF
+static VALUE #{@c_to_r_helper}(value v);
+
+      EOF
+    end
+
     def caml_to_ruby_helper
       if Float === @type
         <<-EOF
@@ -233,6 +261,14 @@ static VALUE
 
         EOF
       end
+    end
+
+    def ruby_to_caml_prototype
+      <<-EOF
+static value #{@r_to_c_helper}(VALUE v);
+static value #{@r_to_c_helper}_safe(VALUE v, int *status);
+
+      EOF
     end
 
     def ruby_to_caml_helper
@@ -341,6 +377,15 @@ static value
       "unwrap_abstract_#{name}(#{x})"
     end
 
+    def caml_to_ruby_prototype
+      <<-EOF
+static void abstract_#{name}_free(abstract_#{name} *ptr);
+static VALUE wrap_abstract_#{name}(value v);
+
+      EOF
+
+    end
+
     def caml_to_ruby_helper
       <<EOF
 static void
@@ -365,17 +410,22 @@ wrap_abstract_#{name}(value v)
   CAMLreturn(ret);
 }
 
-
 EOF
+    end
+
+    def ruby_to_caml_prototype
+      <<-EOF
+typedef struct {
+  value v;
+} abstract_#{name};
+static value unwrap_abstract_#{name}(VALUE v);
+
+      EOF
     end
 
     def ruby_to_caml_helper
       # ruby_to_caml will be called before, must contain type definition
       <<EOF
-typedef struct {
-  value v;
-} abstract_#{name};
-
 static value
 unwrap_abstract_#{name}(VALUE v)
 {
@@ -445,6 +495,13 @@ EOF
       "#{name}_caml_to_ruby(#{x})"
     end
 
+    def caml_to_ruby_prototype
+      <<-EOF
+static VALUE #{name}_caml_to_ruby(value v);
+
+      EOF
+    end
+
     def caml_to_ruby_helper
       non_constant_cases = (0...@types.size).map do |i|
         case @types[i].size
@@ -479,6 +536,15 @@ static VALUE
       CAMLreturn(Qnil);
   }
 }
+      EOF
+    end
+
+    def ruby_to_caml_prototype
+      <<-EOF
+static VALUE #{name}_do_raise(VALUE wrong_tag);
+static value #{name}_constant_ruby_to_caml(VALUE v, int *status);
+static value #{name}_non_constant_ruby_to_caml(VALUE v, int *status);
+static value #{name}_ruby_to_caml(VALUE v, int *status);
       EOF
     end
 
@@ -773,6 +839,14 @@ static value
       @types
     end
 
+    def ruby_to_caml_prototype
+      <<-EOF
+static VALUE #{name}_do_raise(char *s);
+static value #{name}_ruby_to_caml(VALUE v, int *status);
+
+      EOF
+    end
+
     def ruby_to_caml_helper
       conversions = (0...@types.size).map do |idx|
         <<-EOF
@@ -808,6 +882,13 @@ static value
 #{conversions}
   CAMLreturn(ret);
 }
+      EOF
+    end
+
+    def caml_to_ruby_prototype
+      <<-EOF
+static VALUE #{name}_caml_to_ruby(value v);
+
       EOF
     end
 
@@ -1072,6 +1153,13 @@ class Interface
       io.puts "VALUE #{container_name};"
     end
 
+    def emit_prototypes(io, emitted_prototypes)
+      @mappings.each do |m|
+        emit_prototypes_aux(io, m.src, emitted_prototypes, :ruby_to_caml)
+        emit_prototypes_aux(io, m.dst, emitted_prototypes, :caml_to_ruby)
+      end
+    end
+
     def emit_helpers(io, emitted_helpers)
       @mappings.each do |m|
         emit_helper_aux(io, m.src, emitted_helpers, :ruby_to_caml)
@@ -1081,6 +1169,37 @@ class Interface
 
     def emit_wrappers(io)
       @mappings.each{|m| io.puts m.generate(@name)}
+    end
+
+    def emit_prototypes_aux(io, type, emitted, direction)
+      if Types::Type === type && emitted[[direction, type.name]]
+        return
+      end
+      if Types::Type === type
+        puts "emitting prototype for #{type.name}(#{direction})"
+      end
+
+      if Types::Type === type
+        emitted[[direction, type.name]] = true
+      end
+
+      case type
+      when Array
+        type.each{|x| emit_prototypes_aux(io, x, emitted, direction)}
+      #when Types::Type
+      else
+        type.type_dependencies.each do |t|
+          emit_prototypes_aux(io, t, emitted, direction)
+        end
+
+        case direction
+        when :caml_to_ruby
+          io.puts type.caml_to_ruby_prototype if type.respond_to?(:caml_to_ruby_prototype)
+        else
+          io.puts type.ruby_to_caml_prototype if type.respond_to?(:ruby_to_caml_prototype)
+        end
+        io.puts
+      end
     end
 
     def emit_helper_aux(io, type, emitted, direction)
@@ -1172,6 +1291,13 @@ EOF
           io.puts %[  rb_define_singleton_method(#{container_name}, "#{m.name}", #{m.mangled_name(@name)}, #{m.ruby_arity});]
         end
       end
+    end
+
+    def emit_prototypes(io, emitted_prototypes)
+      # ruby_to_caml before, contains type definition
+      emit_prototypes_aux(io, @abstract_type, emitted_prototypes, :ruby_to_caml)
+      emit_prototypes_aux(io, @abstract_type, emitted_prototypes, :caml_to_ruby)
+      super(io, emitted_prototypes)
     end
 
     def emit_helpers(io, emitted_helpers)
@@ -1293,7 +1419,12 @@ EOF
 
 EOF
       @contexts.each{|c| c.emit_container_declaration(f)}
+      f.puts
+      emitted_prototypes = {}
+      @contexts.each{|c| c.emit_prototypes(f, emitted_prototypes)}
+
       f.puts <<EOF
+
 static VALUE
 do_raise_exception(VALUE klass, char *s)
 {
