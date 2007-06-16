@@ -101,7 +101,7 @@ OCAML_TARGET = #{CAML_TARGET}
 $(DLLIB): $(OCAML_TARGET)
 
 $(OCAML_TARGET): #{CAML_OBJS.join(" ")} #{CAML_OBJS.map{|x| x.sub(/\.cmx$/, ".o")}.join(" ")}
-	#{ocamlopt_ld_cmd("$@", "$?")}
+	#{ocamlopt_ld_cmd("$@", "$^")}
 
 
 .SUFFIXES: .c .m .cc .cxx .cpp .C .o .mli .ml .cmi .cmo .cmx
