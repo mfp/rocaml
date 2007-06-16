@@ -1307,7 +1307,7 @@ do_raise_exception_tag(VALUE klass, char *s, int *status)
   VALUE args[2];
   args[0] = klass;
   args[1] = rb_str_new2(s);
-  rb_protect((VALUE (*)(VALUE))do_raise_exception, (VALUE)args, status);
+  rb_protect((VALUE (*)(VALUE))do_raise_exception_tag_aux, (VALUE)args, status);
 }
 
 static VALUE
