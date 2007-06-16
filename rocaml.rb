@@ -506,7 +506,7 @@ static value
   CAMLparam0();
 
   tag = (int) rb_protect((VALUE (*)(VALUE))rb_num2long, v, status);
-  if(*status) CAMLreturn(Val_false);
+  if(status && *status) CAMLreturn(Val_false);
 
   if(tag < 0 || tag >= #{@constant_constructors.size}) {
     rb_protect(#{name}_do_raise, tag, status);
@@ -993,13 +993,13 @@ EOF
     when 1
       <<-EOF
   #{caml_param_list.first} = #{@src.ruby_to_caml_safe(param_list.first, "status")};
-  if(*status) CAMLreturn(Qnil);
+  if(status && *status) CAMLreturn(Qnil);
       EOF
     when 2, 3
       i = 1
       caml_param_list.zip(param_list).map do |caml, ruby|
         r = "  #{caml} = " + @src[i-1].ruby_to_caml_safe(ruby, "status") + ";" + "\n" +
-            "  if(*status) CAMLreturn(Qnil);"
+            "  if(status && *status) CAMLreturn(Qnil);"
         i += 1
         r
       end.join("\n")
@@ -1007,7 +1007,7 @@ EOF
       i = 1
       param_list.map do |p|
         r = "  #{args}[#{i-1}] = " + @src[i-1].ruby_to_caml_safe(p, "status") + ";" + "\n" +
-            "  if(*status) CAMLreturn(Qnil);"
+            "  if(status && *status) CAMLreturn(Qnil);"
         i += 1
         r
       end.join("\n")
