@@ -34,7 +34,7 @@ end
 ocaml_native_lib_path = %w[
   /usr/lib/ocaml/**/libasmrun.a
   /usr/local/lib/ocaml/**/libasmrun.a
-].map{|glob| Dir[glob]}.flatten.sort.last
+].map{|glob| Dir[glob]}.flatten.sort.map{|x| File.dirname(x)}.last
 
 if ocaml_native_lib_path.nil?
   puts "Couldn't find OCaml's native code runtime libasmrun.a"
@@ -55,7 +55,8 @@ else
 end
 
 def ocamlopt_ld_cmd(obj, *sources)
-  "#{OCAMLOPT} -output-obj -o #{obj} #{sources.join(" ")} $(OCAML_LIBS)"
+  linkpkg = OCAML_PACKAGES.empty? ? "" : "-linkpkg"
+  "#{OCAMLOPT} $(OCAML_INCLUDES) -output-obj -o #{obj} $(OCAML_LIBS) #{sources.join(" ")} #{linkpkg}"
 end
 
 CAML_OBJS.push("rubyOCamlUtil.cmx") unless CAML_OBJS.include?("rubyOCamlUtil.cmx")
@@ -70,7 +71,7 @@ EOF
 end
 
 # needed by mkmf's create_makefile
-$LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}"
+$LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{ocaml_native_lib_path}/libunix.a"
 
 if File.exist?("depend.in")
   File.open("depend", "w"){|f| f.print File.read("depend.in") }
