@@ -509,7 +509,7 @@ static value
   if(status && *status) CAMLreturn(Val_false);
 
   if(tag < 0 || tag >= #{@constant_constructors.size}) {
-    rb_protect(#{name}_do_raise, tag, status);
+    rb_protect(#{name}_do_raise, INT2FIX(tag), status);
     CAMLreturn(Val_false);
     /* this will signal the error through status; the caller must handle it */
   }
@@ -537,7 +537,7 @@ static value
   switch(tag) {
 #{non_constant_tag_cases}
   default:
-    rb_protect(#{name}_do_raise, tag, status);
+    rb_protect(#{name}_do_raise, INT2FIX(tag), status);
     CAMLreturn(Val_false);
   }
 }
