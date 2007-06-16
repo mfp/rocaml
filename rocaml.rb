@@ -1067,12 +1067,14 @@ EOF
     c = Module.new(name, options)
     c.instance_eval(&block)
     @contexts << c
+    c
   end
 
   def def_class(name, options = {}, &block)
     c = Class.new(name, options)
-    c.do_instance_eval(&block)
+    c.do_instance_eval(&block) if block
     @contexts << c
+    c
   end
 
   def generate
