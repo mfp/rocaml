@@ -557,6 +557,187 @@ static value
     end
   end
 
+  class SymbolicVariant < Variant
+    def ruby_to_caml(x)
+      "#{name}_ruby_to_caml(#{x}, NULL)"
+    end
+
+    def ruby_to_caml_safe(x, status)
+      "#{name}_ruby_to_caml(#{x}, #{status})"
+    end
+
+    def caml_to_ruby(x)
+      # TODO: non-constant constructors
+      "#{name}_caml_to_ruby(#{x})"
+    end
+
+    def caml_to_ruby_helper
+      non_constant_cases = (0...@types.size).map do |i|
+        case @types[i].size
+        when 1
+          convert = "rb_ary_push(ret, RARRAY(#{@types[i].caml_to_ruby("v")})->ptr[0]);"
+        else
+          convert = "rb_ary_push(ret, #{@types[i].caml_to_ruby("v")});"
+        end
+        <<-EOF
+  case #{i}:
+    #{convert}
+    CAMLreturn(ret);
+        EOF
+      end.join("\n")
+
+      fill_constant_table = @constant_constructors.sort_by{|_,i| i}.map do |tname, index|
+        "    st_insert(#{name}_constant_table, #{index}, rb_intern(#{tname.to_s.inspect}));"
+      end.join("\n")
+      fill_non_constant_table = @non_constant_constructors.sort_by{|_,i| i}.map do |tname, (index, _)|
+        "    st_insert(#{name}_non_constant_table, #{index}, rb_intern(#{tname.to_s.inspect}));"
+      end.join("\n")
+
+      fill_tables = [fill_constant_table, fill_non_constant_table].join("\n")
+
+      <<-EOF
+static VALUE
+#{name}_caml_to_ruby(value v)
+{
+  VALUE ret;
+  ID id;
+  static st_table* #{name}_constant_table = NULL;
+  static st_table* #{name}_non_constant_table = NULL;
+  CAMLparam1(v);
+
+  if(#{name}_constant_table == NULL) {
+    #{name}_constant_table = st_init_numtable();
+    #{name}_non_constant_table = st_init_numtable();
+#{fill_tables}
+  }
+
+  if(Is_long(v)) {
+    if(!st_lookup(#{name}_constant_table, Int_val(v), &id)) {
+      rb_warning("Unknown constant tag %d for type #{name}, returning nil. Check your OCaml interface definition", Int_val(v));
+      CAMLreturn(Qnil);
+    }
+    CAMLreturn(ID2SYM(id));
+  }
+
+  if(!st_lookup(#{name}_non_constant_table, Tag_val(v), &id)) {
+    rb_warning("Unknown non-constant tag %d for type #{name}, returning nil. Check your OCaml interface definition", Tag_val(v));
+    CAMLreturn(Qnil);
+  }
+  ret = rb_ary_new();
+  rb_ary_push(ret, ID2SYM(id));
+  switch(Tag_val(v)) {
+#{non_constant_cases}
+    default:
+      rb_warning("Unknown tag %d for type #{name}, returning nil. Check your OCaml interface definition", Tag_val(v));
+      CAMLreturn(Qnil);
+  }
+}
+      EOF
+    end
+
+    def ruby_to_caml_helper
+      non_constant_tag_cases = (0...@types.size).map do |i|
+        <<-EOF
+  case #{i}:
+    camlval = #{@types[i].ruby_to_caml_safe("RARRAY(tuple)->ptr[1]", "status")};
+    if(status && *status) CAMLreturn(Val_false); /* normally redundant */
+    CAMLreturn(camlval);
+        EOF
+      end.join("\n")
+
+      fill_constant_table = @constant_constructors.sort_by{|_,i| i}.map do |tname, index|
+        "    st_insert(#{name}_constant_table, rb_intern(#{tname.to_s.inspect}), #{index});"
+      end.join("\n")
+      fill_non_constant_table = @non_constant_constructors.sort_by{|_,i| i}.map do |tname, (index, _)|
+        "    st_insert(#{name}_non_constant_table, rb_intern(#{tname.to_s.inspect}), #{index});"
+      end.join("\n")
+
+      <<-EOF
+static VALUE
+#{name}_do_raise(VALUE wrong_tag)
+{
+  VALUE bad_tag = rb_inspect(wrong_tag);
+  rb_raise(rb_eRuntimeError, "Tag %s isn't defined for variant '#{name}'",
+           StringValuePtr(bad_tag));
+}
+
+static value
+#{name}_constant_ruby_to_caml(VALUE v, int *status)
+{
+  int tag;
+  static st_table* #{name}_constant_table = NULL;
+  CAMLparam0();
+
+  if(#{name}_constant_table == NULL) {
+    #{name}_constant_table = st_init_numtable();
+#{fill_constant_table}
+  }
+
+  if(!st_lookup(#{name}_constant_table, SYM2ID(v), &tag)) {
+    rb_protect(#{name}_do_raise, v, status);
+    CAMLreturn(Val_false);
+  }
+
+  if(tag < 0 || tag >= #{@constant_constructors.size}) {
+    rb_protect(#{name}_do_raise, INT2FIX(tag), status);
+    CAMLreturn(Val_false);
+    /* this will signal the error through status; the caller must handle it */
+  }
+  CAMLreturn(Val_int(tag));
+}
+
+static value
+#{name}_non_constant_ruby_to_caml(VALUE v, int *status)
+{
+  VALUE tuple;
+  int tag;
+  static st_table* #{name}_non_constant_table = NULL;
+  CAMLparam0();
+  CAMLlocal1(camlval);
+
+
+  if(#{name}_non_constant_table == NULL) {
+    #{name}_non_constant_table = st_init_numtable();
+#{fill_non_constant_table}
+  }
+
+  tuple = rb_protect(rb_Array, v, status);
+  if(status && *status) CAMLreturn(Val_false);
+  if(RARRAY(tuple)->len != 2 || TYPE(RARRAY(tuple)->ptr[0]) != T_SYMBOL) {
+    do_raise_exception_tag(rb_eRuntimeError,
+                           "Non-constant constructor expects a 2-element array [TAG, VALUE]",
+                           status);
+    CAMLreturn(Val_false);
+  }
+
+  if(!st_lookup(#{name}_non_constant_table, SYM2ID(RARRAY(tuple)->ptr[0]), &tag)) {
+    rb_protect(#{name}_do_raise, RARRAY(tuple)->ptr[0], status);
+    CAMLreturn(Val_false);
+  }
+
+  switch(tag) {
+#{non_constant_tag_cases}
+  default:
+    rb_protect(#{name}_do_raise, INT2FIX(tag), status);
+    CAMLreturn(Val_false);
+  }
+}
+
+static value
+#{name}_ruby_to_caml(VALUE v, int *status)
+{
+ CAMLparam0();
+
+ if(TYPE(v) == T_SYMBOL) {
+   CAMLreturn(#{name}_constant_ruby_to_caml(v, status));
+ }
+ CAMLreturn(#{name}_non_constant_ruby_to_caml(v, status));
+}
+
+      EOF
+    end
+  end
+
   class Tuple < Type
     include CodeGeneratorHelper
 
@@ -1059,6 +1240,12 @@ EOF
 
   def variant(name, &block)
     variant = Types::Variant.new(name)
+    variant.instance_eval(&block)
+    @types[name] = variant
+  end
+
+  def sym_variant(name, &block)
+    variant = Types::SymbolicVariant.new(name)
     variant.instance_eval(&block)
     @types[name] = variant
   end
