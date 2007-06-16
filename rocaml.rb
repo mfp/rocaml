@@ -664,7 +664,7 @@ static VALUE
 static value
 #{name}_constant_ruby_to_caml(VALUE v, int *status)
 {
-  int tag;
+  st_data_t tag;
   static st_table* #{name}_constant_table = NULL;
   CAMLparam0();
 
@@ -690,7 +690,7 @@ static value
 #{name}_non_constant_ruby_to_caml(VALUE v, int *status)
 {
   VALUE tuple;
-  int tag;
+  st_data_t tag;
   static st_table* #{name}_non_constant_table = NULL;
   CAMLparam0();
   CAMLlocal1(camlval);
