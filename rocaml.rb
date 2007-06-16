@@ -1210,6 +1210,10 @@ class Interface
         puts "emitting helper #{type.name}(#{direction})"
       end
 
+      if Types::Type === type
+        emitted[[direction, type.name]] = true
+      end
+
       case type
       when Array
         type.each{|x| emit_helper_aux(io, x, emitted, direction)}
@@ -1226,10 +1230,6 @@ class Interface
           io.puts type.ruby_to_caml_helper if type.respond_to?(:ruby_to_caml_helper)
         end
         io.puts
-      end
-
-      if Types::Type === type
-        emitted[[direction, type.name]] = true
       end
     end
 
