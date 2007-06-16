@@ -24,6 +24,9 @@ let tuple t = (42, t.kind, "foo")
 let send_tuple t (n, kind, s) =
   printf "got (%d, %s, '%s')\n%!" n (string_of_kind kind) s
 
+let identity kind =
+  printf "got %s\n%!" (string_of_kind kind);
+  kind
 
 open Callback
 let _ =
@@ -31,5 +34,6 @@ let _ =
   register "DummyBase.get_kind" get_kind;
   register "DummyBase.set_kind" set_kind;
   register "DummyBase.tuple" tuple;
-  register "DummyBase.send_tuple" send_tuple
+  register "DummyBase.send_tuple" send_tuple;
+  register "SymbolicVariants.identity" identity
 

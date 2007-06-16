@@ -30,6 +30,18 @@ Interface.generate("variants") do |iface|
     non_constant :Barbaz, TUPLE(INT, STRING)
   end
 
+  sym_kind = sym_variant("sym_kind") do
+    constant :Foo
+    constant :Bar
+    constant :Baz
+    non_constant :Foobar, STRING
+    non_constant :Barbaz, TUPLE(INT, STRING)
+  end
+
+  def_module("SymbolicVariants", :under => "Variants") do
+    fun "identity", sym_kind => sym_kind
+  end
+
   def_class("DummyBase", :under => "Variants") do |c|
     fun "create", UNIT => c.abstract_type, :aliased_as => "new"
 
