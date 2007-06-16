@@ -657,7 +657,7 @@ static VALUE
 #{name}_do_raise(VALUE wrong_tag)
 {
   VALUE bad_tag = rb_inspect(wrong_tag);
-  rb_raise(rb_eRuntimeError, "Tag %s isn't defined for symbolic variant '#{name}'",
+  rb_raise(rb_eRuntimeError, "Tag %s isn't defined for symbolic variant '#{name}'. #{help_message}",
            StringValuePtr(bad_tag));
 }
 
@@ -705,7 +705,7 @@ static value
   if(status && *status) CAMLreturn(Val_false);
   if(RARRAY(tuple)->len != 2 || TYPE(RARRAY(tuple)->ptr[0]) != T_SYMBOL) {
     do_raise_exception_tag(rb_eRuntimeError,
-                           "Non-constant symbolic constructor expects a 2-element array [:TAG, VALUE]",
+                           "Non-constant symbolic constructor expects a 2-element array [:TAG, VALUE]. #{help_message}",
                            status);
     CAMLreturn(Val_false);
   }
@@ -735,6 +735,13 @@ static value
 }
 
       EOF
+    end
+
+    private
+    def help_message
+      ["#{name} knows about",
+       "constant: " + @constant_constructors.map{|tname,_| tname.inspect}.join(", "),
+       "non-constant: " + @non_constant_constructors.map{|tname,_| tname.inspect}.join(", ")].join(" ")
     end
   end
 
