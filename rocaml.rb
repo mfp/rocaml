@@ -120,10 +120,10 @@ string_ruby_to_caml_safe(VALUE s, int *status)
   CAMLlocal1(ret);
 
   r = (char *)rb_protect((VALUE (*)(VALUE)) rb_string_value_ptr, (VALUE)&s, status);
-  if(!*status) {
-      ret = caml_copy_string(r);
-  } else {
+  if(status && *status) {
       ret = Val_false;
+  } else {
+      ret = caml_copy_string(r);
   }
 
   CAMLreturn(ret);
@@ -173,10 +173,10 @@ value safe_rbFloat_to_caml(VALUE v, int *status)
   CAMLlocal1(ret);
 
   r = rb_protect(rb_Float, v, status);
-  if(!*status) {
-      ret = caml_copy_double(RFLOAT(r)->value);
-  } else {
+  if(status && *status) {
       ret = Val_false;
+  } else {
+      ret = caml_copy_double(RFLOAT(r)->value);
   }
 
   CAMLreturn(ret);
