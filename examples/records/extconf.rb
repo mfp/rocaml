@@ -25,6 +25,9 @@ Interface.generate("records") do
   def_module("Records") do
     t1 = RECORD([:a, :b, :c], [INT, STRING, FLOAT])
     fun "test_record", t1 => t1
+
+    vector = RECORD([:x, :y, :z], [FLOAT, FLOAT, FLOAT])
+    fun "add_vector", [vector, vector] => vector
   end
 end
 
