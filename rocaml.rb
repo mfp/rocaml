@@ -944,6 +944,7 @@ static VALUE
       <<-EOF
 static VALUE #{name}_do_raise(char *s);
 static value #{name}_ruby_to_caml(VALUE v, int *status);
+static double #{name}_VALUE_to_double(VALUE v, int *status);
 
       EOF
     end
@@ -954,7 +955,7 @@ static value #{name}_ruby_to_caml(VALUE v, int *status);
   {
     VALUE val;
     val = rb_hash_aref(v, ID2SYM(rb_intern(#{@names[idx].to_s.inspect})));
-    Store_field(ret, #{idx}, #{@types[idx].ruby_to_caml_safe("val", "status")});
+    #{block_set("ret", idx, "val", "status")}
     if(status && *status) CAMLreturn(Val_false);
   }
         EOF
@@ -967,6 +968,19 @@ static VALUE
 #{name}_do_raise(char *s)
 {
   rb_raise(rb_eRuntimeError, "%s", s);
+}
+
+static double
+#{name}_VALUE_to_double(VALUE v, int *status)
+{
+  VALUE r;
+
+  r = rb_protect(rb_Float, v, status);
+  if(status && *status) {
+      return 0;
+  } else {
+      return RFLOAT(r)->value;
+  }
 }
 
 static value
@@ -982,7 +996,7 @@ static value
     CAMLreturn(Val_false);
   }
 
-  ret = caml_alloc(#{@types.size}, 0);
+  ret = caml_alloc(#{block_size}, #{tag});
 #{conversions}
   CAMLreturn(ret);
 }
@@ -1000,7 +1014,7 @@ static VALUE #{name}_caml_to_ruby(value v);
       conversions = (0...@types.size).map do |i|
         <<-EOF
   rb_hash_aset(ret, ID2SYM(rb_intern(#{@names[i].to_s.inspect})),
-               #{@types[i].caml_to_ruby("Field(v, #{i})")});
+               #{block_get("v", i)});
         EOF
       end.join("\n")
 
@@ -1029,6 +1043,50 @@ static VALUE
     def ruby_to_caml_safe(x, status)
       "#{name}_ruby_to_caml(#{x}, #{status})"
     end
+
+    private
+    def block_set(block, index, value, status)
+      "Store_field(#{block}, #{index}, #{@types[index].ruby_to_caml_safe(value, status)});"
+    end
+
+    def block_get(block, index)
+      @types[index].caml_to_ruby("Field(#{block}, #{index})")
+    end
+
+    def block_size
+      @types.size
+    end
+
+    def tag
+      0
+    end
+  end
+
+  class FloatRecord < Record
+    # a Record holding only floats, represented as an array of floats with tag
+    # Double_array_tag
+
+    def block_set(block, index, value, status)
+      <<-EOF
+{
+      double d;
+      d = #{name}_VALUE_to_double(#{value}, #{status});
+      Store_double_field(#{block}, #{index}, d);
+    }
+      EOF
+    end
+
+    def block_get(block, index)
+      "rb_float_new(Double_field(#{block}, #{index}))"
+    end
+
+    def block_size
+      @types.size * 2 # 2 words per float
+    end
+
+    def tag
+      "Double_array_tag"
+    end
   end
 
   module Exported
@@ -1040,7 +1098,13 @@ static VALUE
     def ARRAY(type); Array.new(type) end
     def ABSTRACT(name); Abstract.new(name) end
     def TUPLE(*types); Tuple.new(*types) end
-    def RECORD(names, types); Record.new(names, types) end
+    def RECORD(names, types)
+      if types.all?{|x| Types::Float === x}
+        FloatRecord.new(names, types)
+      else
+        Record.new(names, types)
+      end
+    end
   end
 end
 
