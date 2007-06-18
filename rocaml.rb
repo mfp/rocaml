@@ -924,6 +924,113 @@ static VALUE
     end
   end
 
+  class Record < Type
+    def initialize(names, types)
+      raise "Need as many types as names." unless names.size == types.size
+      @names = names
+      @types = types
+      @map   = Hash[*names.zip(types).flatten]
+    end
+
+    def name
+      "r_#{@names.join("_")}__#{@types.map{|x| x.name}.join('_')}_record"
+    end
+
+    def type_dependencies
+      @types
+    end
+
+    def ruby_to_caml_prototype
+      <<-EOF
+static VALUE #{name}_do_raise(char *s);
+static value #{name}_ruby_to_caml(VALUE v, int *status);
+
+      EOF
+    end
+
+    def ruby_to_caml_helper
+      conversions = (0...@types.size).map do |idx|
+        <<-EOF
+  {
+    VALUE val;
+    val = rb_hash_aref(v, ID2SYM(rb_intern(#{@names[idx].to_s.inspect})));
+    Store_field(ret, #{idx}, #{@types[idx].ruby_to_caml_safe("val", "status")});
+    if(status && *status) CAMLreturn(Val_false);
+  }
+        EOF
+      end.join("\n")
+
+      keys = @names.map{|x| x.to_sym.inspect}.join(" ")
+
+      <<-EOF
+static VALUE
+#{name}_do_raise(char *s)
+{
+  rb_raise(rb_eRuntimeError, "%s", s);
+}
+
+static value
+#{name}_ruby_to_caml(VALUE v, int *status)
+{
+  CAMLparam0();
+  CAMLlocal1(ret);
+
+  if(TYPE(v) != T_HASH || NUM2INT(rb_funcall(v, rb_intern("size"), 0)) != #{@types.size}) {
+    rb_protect((VALUE (*)(VALUE))#{name}_do_raise,
+               (VALUE)"Conversion to OCaml with #{name} needs a hash with keys #{keys}",
+               status);
+    CAMLreturn(Val_false);
+  }
+
+  ret = caml_alloc(#{@types.size}, 0);
+#{conversions}
+  CAMLreturn(ret);
+}
+      EOF
+    end
+
+    def caml_to_ruby_prototype
+      <<-EOF
+static VALUE #{name}_caml_to_ruby(value v);
+
+      EOF
+    end
+
+    def caml_to_ruby_helper
+      conversions = (0...@types.size).map do |i|
+        <<-EOF
+  rb_hash_aset(ret, ID2SYM(rb_intern(#{@names[i].to_s.inspect})),
+               #{@types[i].caml_to_ruby("Field(v, #{i})")});
+        EOF
+      end.join("\n")
+
+      <<-EOF
+static VALUE
+#{name}_caml_to_ruby(value v)
+{
+  VALUE ret;
+  CAMLparam1(v);
+
+  ret = rb_hash_new();
+#{conversions}
+  CAMLreturn(ret);
+}
+      EOF
+    end
+
+    def caml_to_ruby(x)
+      "#{name}_caml_to_ruby(#{x})"
+    end
+
+    def ruby_to_caml(x)
+      "#{name}_ruby_to_caml(#{x}, NULL)"
+    end
+
+    def ruby_to_caml_safe(x, status)
+      "#{name}_ruby_to_caml(#{x}, #{status})"
+    end
+  end
+
   module Exported
     INT = Int.new
     BOOL = Bool.new
@@ -933,6 +1040,7 @@ static VALUE
     def ARRAY(type); Array.new(type) end
     def ABSTRACT(name); Abstract.new(name) end
     def TUPLE(*types); Tuple.new(*types) end
+    def RECORD(names, types); Record.new(names, types) end
   end
 end
 
