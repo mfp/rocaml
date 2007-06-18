@@ -29,6 +29,9 @@ Interface.generate("fib") do
     fun "fib_range_plus", [INT, INT, ARRAY(FLOAT)] => ARRAY(FLOAT)
     fun "raise_if_negative", INT => UNIT
     fun "inexistent", INT => INT
+
+    fun "sum_vectors",
+      [TUPLE(FLOAT, FLOAT, FLOAT), TUPLE(FLOAT, FLOAT, FLOAT)] => TUPLE(FLOAT, FLOAT, FLOAT)
   end
 end
 
