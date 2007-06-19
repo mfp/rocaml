@@ -22,19 +22,36 @@ $:.unshift "../.."
 require 'rocaml'
 
 Interface.generate("tree") do |iface|
-  string_tree = sym_variant("kind") do |t|
-    constant :Empty
-    non_constant :Node, TUPLE(t, STRING, t)
+  color = sym_variant("color"){ constant :R; constant :B }
+
+  types = {}
+  {:string => STRING, :int => INT}.each do |name, type|
+    types["#{name}_tree"] = sym_variant("#{name}_tree") do |t|
+      constant :Empty
+      non_constant :Node, TUPLE(t, type, t)
+    end
+
+    types["#{name}_rbtree"] = sym_variant("#{name}_rbtree") do |t|
+      constant :Empty
+      non_constant :Node, TUPLE(color, t, type, t)
+    end
   end
 
-  def_class("StringSet") do |c|
-    t = c.abstract_type
-    fun "empty", UNIT => t, :aliased_as => "new"
-    fun "make", string_tree => t
+  [["Set", "tree"], ["RBSet", "rbtree"]].each do |implementation, tree_name|
+    [["int", INT], ["string", STRING]].each do |typename, type|
+      name = "#{typename.capitalize}#{implementation}"
+      tree_type = types["#{typename}_#{tree_name}"]
 
-    method "add", [t, STRING] => t
-    method "mem", [t, STRING] => BOOL, :aliased_as => "include?"
-    method "dump", t => string_tree
+      def_class(name) do |c|
+        t = c.abstract_type
+        fun "empty", UNIT => t, :aliased_as => "new"
+        fun "make", tree_type => t
+
+        method "add", [t, type] => t
+        method "mem", [t, type] => BOOL, :aliased_as => "include?"
+        method "dump", t => tree_type
+      end
+    end
   end
 end
 
