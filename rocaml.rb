@@ -228,7 +228,7 @@ static VALUE
   int siz;
   int i;
 
-  siz = Wosize_val(v) / 2; /* 2 words per double; (size - 1) / 2 is wrong */
+  siz = Wosize_val(v) / 2; /* 2 words per double */
   ret = rb_ary_new2(siz);
   for(i = 0; i < siz; i++) {
       RARRAY(ret)->ptr[i] = rb_float_new(Double_field(v, i));
@@ -249,7 +249,7 @@ static VALUE
   int siz;
   int i;
 
-  siz = Wosize_val(v) - 1;
+  siz = Wosize_val(v);
   ret = rb_ary_new2(siz);
   for(i = 0; i < siz; i++) {
       RARRAY(ret)->ptr[i] = #{@type.caml_to_ruby("Field(v, i)")};
