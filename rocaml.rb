@@ -210,6 +210,10 @@ value safe_rbFloat_to_caml(VALUE v, int *status)
       "#{@r_to_c_helper}(#{x})"
     end
 
+    def ruby_to_caml_safe(x, status)
+      "#{@r_to_c_helper}_safe(#{x}, #{status})"
+    end
+
     def caml_to_ruby_prototype
       <<-EOF
 static VALUE #{@c_to_r_helper}(value v);
@@ -291,25 +295,39 @@ static value
   CAMLreturn(ret);
 }
 
+static double
+#{@r_to_c_helper}_safe_rbFloat(VALUE v, int *status)
+{
+  VALUE r;
+
+  r = rb_protect(rb_Float, v, status);
+  if(status && *status) {
+      return 0.0;
+  } else {
+      return RFLOAT(r)->value;
+  }
+}
+
 static value
 #{@r_to_c_helper}_safe(VALUE v, int *status)
 {
   int siz;
   int i;
   CAMLparam0();
-  CAMLlocal2(ret, camlv);
+  CAMLlocal1(ret);
 
+  v = rb_protect(rb_Array, v, status);
+  if(status && *status) {
+    CAMLreturn(Val_false);
+  }
   siz = RARRAY(v)->len;
   ret = caml_alloc(siz * 2, Double_array_tag); /* 2 words per double */
   for(i = 0; i < siz; i++) {
-      int s = 0;
-
-      camlv = #{@type.ruby_to_caml_safe("RARRAY(v)->ptr[i]", "&s")};
-      if(s) {
-        *status = s;
+      double d = #{@r_to_c_helper}_safe_rbFloat(RARRAY(v)->ptr[i], status);
+      if(status && *status) {
         CAMLreturn(Val_false);
       }
-      Store_double_field(ret, i, camlv);
+      Store_double_field(ret, i, d);
   }
 
   CAMLreturn(ret);
@@ -338,18 +356,19 @@ static value
 #{@r_to_c_helper}_safe(VALUE v, int *status)
 {
   CAMLparam0();
-  CAMLlocal2(ret, camlv);
   int siz;
   int i;
+  CAMLlocal2(ret, camlv);
 
+  v = rb_protect(rb_Array, v, status);
+  if(status && *status) {
+    CAMLreturn(Val_false);
+  }
   siz = RARRAY(v)->len;
   ret = caml_alloc(siz, 0);
   for(i = 0; i < siz; i++) {
-      int s = 0;
-
-      camlv = #{@type.ruby_to_caml_safe("RARRAY(v)->ptr[i]", "&s")};
-      if(s) {
-        *status = s;
+      camlv = #{@type.ruby_to_caml_safe("RARRAY(v)->ptr[i]", "status")};
+      if(status && *status) {
         CAMLreturn(Val_false);
       }
       Store_field(ret, i, camlv);
