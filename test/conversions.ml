@@ -42,6 +42,7 @@ struct
       r "int_tuple2" int_tuple2;
       r "float_tuple2" float_tuple2;
       r "int_float_tuple2" int_float_tuple2;
-      r "string_tuple2" string_tuple2
+      r "string_tuple2" string_tuple2;
+      r "string_int_float_bool_tuple4" (fun x -> x)
 end
 

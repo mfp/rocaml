@@ -8,9 +8,9 @@ RUBY = File.join(*%w[bindir ruby_install_name].map{|x| Config::CONFIG[x]})
 ITERATIONS = 10
 
 class TestROCamlConversions < Test::Unit::TestCase
-  def rocamlrun(f, input)
+  def rocamlrun(f, input, printer = "puts")
     arg = input.nil? ? "" : input.inspect
-    cmd = %[ruby -I#{DIR} -rrocaml_tests -e 'puts Conversions.#{f}(#{arg})' 2>&1]
+    cmd = %[ruby -I#{DIR} -rrocaml_tests -e '#{printer} Conversions.#{f}(#{arg})' 2>&1]
     `#{cmd}`.chomp
   end
 
@@ -124,5 +124,11 @@ class TestROCamlConversions < Test::Unit::TestCase
 
   def test_string_tuple2
     aux_test("string", "tuple2"){ ["bar " + rand(100000).to_s, "foo" + rand_float.to_s] }
+  end
+
+  def test_take_and_return_complex_tuple
+    x = ["foobar", 42, 0.0125, true]
+    out = rocamlrun("string_int_float_bool_tuple4", x, "p")
+    assert_equal(%(["foobar", 42, 0.0125, true]), out)
   end
 end

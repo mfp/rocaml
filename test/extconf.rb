@@ -37,6 +37,9 @@ Interface.generate("rocaml_tests") do
     fun "float_tuple2", TUPLE(FLOAT, FLOAT) => STRING
     fun "int_float_tuple2", TUPLE(INT, FLOAT) => STRING
     fun "string_tuple2", TUPLE(STRING, STRING) => STRING
+    fun "string_int_float_bool_tuple4",
+      TUPLE(STRING, INT, FLOAT, BOOL) =>
+        TUPLE(STRING, INT, FLOAT, BOOL)
   end
 end
 
