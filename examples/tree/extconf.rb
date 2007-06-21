@@ -14,8 +14,8 @@ CAML_OBJS = %w[]
 # compilation flags
 CAML_FLAGS = ""
 
-# -I options (-I must be prepended)
-CAML_INCLUDES = %w[]
+# -I options (-I must be prepended) e.g. ["-I ../lib"]
+CAML_INCLUDES = []
 
 $:.unshift "../.."
 

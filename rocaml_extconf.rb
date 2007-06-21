@@ -22,7 +22,7 @@ require 'mkmf'
 #CAML_LIBS = %w[]          # some cmxa
 #CAML_OBJS = %w[]          # list of .cmx, autodetected if empty
 #CAML_FLAGS = ""           # compilation flags
-#CAML_INCLUDES = %w[]      # -I options (-I must be prepended)
+#CAML_INCLUDES = []        # -I options (-I must be prepended)
 
 
 CAML_TARGET = "#{EXT_NAME}_rocaml_runtime.o"

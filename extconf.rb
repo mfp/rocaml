@@ -16,8 +16,8 @@ CAML_OBJS = %w[]
 # if non-empty, will use ocamlfind
 OCAML_PACKAGES = %w[]
 
-# -I options (-I must be prepended)
-CAML_INCLUDES = %w[]
+# -I options (-I must be prepended) e.g. ["-I ../lib"]
+CAML_INCLUDES = []
 
 # cmxa libraries to use
 CAML_LIBS = %w[]
