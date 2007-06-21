@@ -50,6 +50,7 @@ Interface.generate("tree") do |iface|
         method "add", [t, type] => t
         method "mem", [t, type] => BOOL, :aliased_as => "include?"
         method "dump", t => tree_type
+        method "iter", t => t, :aliased_as => "each", :yield => [type, UNIT]
       end
     end
   end

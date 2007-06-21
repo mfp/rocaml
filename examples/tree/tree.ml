@@ -22,6 +22,10 @@ struct
 
   let add' t x = add x t
   let mem' t x = mem x t
+
+  let rec iter f = function
+      Empty -> ()
+    | Node(l, x, r) -> iter f l; f x; iter f r
 end
 
 module RBSet =
@@ -46,7 +50,7 @@ struct
   let add x t =
     let rec ins = function
         Empty -> Node(R, Empty, x, Empty)
-      | Node(color, a, y, b) as n ->
+      | Node(color, a, y, b) ->
           if x < y then balance (color, ins a, y, b)
           else if x > y then balance (color, a, y, ins b)
           else raise Found
@@ -54,9 +58,16 @@ struct
         Node (_, a, y, b) ->  Node(B, a, y, b)
       | Empty -> assert false (* ins always returns Node _ *)
     with Found -> t
+
+  let rec iter f = function
+      Empty -> ()
+    | Node(_, l, x, r) -> iter f l; f x; iter f r
 end
 
 let identity x = x
+
+external intset_yield : int -> unit = "IntSet_iter_yield"
+external stringset_yield : int -> unit = "StringSet_iter_yield"
 
 open Callback
 let _ =
@@ -72,4 +83,9 @@ let _ =
       r2 "mem" (fun t x -> RBSet.mem x t);
       r2 "dump" identity
   in
-    List.iter def_set ["Int"; "String"]
+    List.iter def_set ["Int"; "String"];
+    register "IntSet.iter" (SimpleSet.iter intset_yield);
+    register "StringSet.iter" (SimpleSet.iter stringset_yield);
+    register "IntRBSet.iter" (RBSet.iter intset_yield);
+    register "StringRBSet.iter" (RBSet.iter stringset_yield);
+

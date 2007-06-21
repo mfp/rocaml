@@ -18,6 +18,11 @@ p s2.dump
   p s2.dump
 end
 
+puts "\nIterating over the elements:"
+require 'enumerator'
+puts "Simple\tRB"
+s.to_enum.zip(s2.to_enum).each{|x, y| puts "#{x}\t#{y}"}
+
 begin
   require 'benchmark'
   require 'rbtree'
@@ -35,8 +40,8 @@ begin
   Benchmark.bm(25) do |bm|
     bm.report("nop iteration"){ items.each{|x| }}
     bm.report("RBTree insert"){ items.each{|x| rb[x] = true } }
-    bm.report("IntRBSet insert"){ items.each{|x| s = s.add(x) } }
-    bm.report("IntSet insert"){ items.each{|x| s2 = s2.add(x) } }
+    bm.report("StringRBSet insert"){ items.each{|x| s = s.add(x) } }
+    bm.report("StringSet insert"){ items.each{|x| s2 = s2.add(x) } }
   end
 
   puts
@@ -44,9 +49,9 @@ begin
   items2 = (0...nitems).map{|x| rand(range).to_s}
   Benchmark.bmbm(22) do |bm|
     bm.report("nop iteration"){ items2.each{|x| }}
-    bm.report("RBTree lookup"){ items2.each{|x| rb[x.to_s]} }
-    bm.report("IntRBSet lookup"){ items2.each{|x| s.include?(x)} }
-    bm.report("IntSet lookup"){ items2.each{|x| s2.include?(x)} }
+    bm.report("RBTree lookup"){ items2.each{|x| rb[x]} }
+    bm.report("StringRBSet lookup"){ items2.each{|x| s.include?(x)} }
+    bm.report("StringSet lookup"){ items2.each{|x| s2.include?(x)} }
   end
 
   puts <<-EOF
