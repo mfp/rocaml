@@ -41,8 +41,15 @@ class TestROCamlConversions < Test::Unit::TestCase
     ["bogus", true, false].each{|x| atyp("int", x) }
   end
 
+  def rand_float
+    # string_of_float and Float#to_s differ for integers: 1. vs 1.0
+    # so need to generate appropriate values, also take into account
+    # rounding
+    (1 + rand(128)) / 256.0
+  end
+
   def test_float
-    ITERATIONS.times{ aeq("float", 1.0 - rand) }
+    ITERATIONS.times{ aeq("float", rand_float) }
   end
 
   def test_float_auto_conversions
@@ -68,11 +75,15 @@ class TestROCamlConversions < Test::Unit::TestCase
     aeq("unit", nil, "nil")
   end
 
-  def aux_test_array(type)
+  def aux_test(type, kind)
     ITERATIONS.times do
-      a = (1..50).map{|x| yield }
-      aeq("#{type}_array", a, a.inspect)
+      a = yield
+      aeq("#{type}_#{kind}", a, a.inspect)
     end
+  end
+
+  def aux_test_array(type, &block)
+    aux_test(type, "array") { (1..50).map{|x| yield } }
   end
 
   def test_bool_array
@@ -84,12 +95,7 @@ class TestROCamlConversions < Test::Unit::TestCase
   end
 
   def test_float_array
-    aux_test_array("float") do
-      # string_of_float and Float#to_s differ for integers: 1. vs 1.0
-      # so need to generate appropriate values, also take into account
-      # rounding
-      (1 + rand(128)) / 256.0
-    end
+    aux_test_array("float"){ rand_float }
   end
 
   def test_string_array
@@ -101,6 +107,22 @@ class TestROCamlConversions < Test::Unit::TestCase
   end
 
   def test_float_array_array
-    aux_test_array("float_array"){ (1..2 + rand(10)).map{ (1 + rand(128)) / 256.0 } }
+    aux_test_array("float_array"){ (1..2 + rand(10)).map{ rand_float } }
+  end
+
+  def test_int_tuple2
+    aux_test("int", "tuple2"){ [rand(100000), rand(100000)] }
+  end
+
+  def test_float_tuple2
+    aux_test("float", "tuple2"){ [rand_float, rand_float] }
+  end
+
+  def test_int_float_tuple2
+    aux_test("int_float", "tuple2"){ [rand(100000), rand_float] }
+  end
+
+  def test_string_tuple2
+    aux_test("string", "tuple2"){ ["bar " + rand(100000).to_s, "foo" + rand_float.to_s] }
   end
 end

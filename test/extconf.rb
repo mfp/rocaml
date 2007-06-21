@@ -1,6 +1,6 @@
 
 # extension name, XXX in   require 'XXX'
-EXT_NAME = "ocaml_tests"
+EXT_NAME = "rocaml_tests"
 
 # if non-empty, will use ocamlfind
 OCAML_PACKAGES = %w[]
@@ -33,6 +33,10 @@ Interface.generate("rocaml_tests") do
     end
     fun "int_array_array", ARRAY(ARRAY(INT)) => STRING
     fun "float_array_array", ARRAY(ARRAY(FLOAT)) => STRING
+    fun "int_tuple2", TUPLE(INT, INT) => STRING
+    fun "float_tuple2", TUPLE(FLOAT, FLOAT) => STRING
+    fun "int_float_tuple2", TUPLE(INT, FLOAT) => STRING
+    fun "string_tuple2", TUPLE(STRING, STRING) => STRING
   end
 end
 
