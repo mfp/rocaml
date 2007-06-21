@@ -1131,11 +1131,12 @@ include Types::Exported
 
 class Mapping
   include CodeGeneratorHelper
-  attr_reader :src, :dst, :name, :pass_self
+  attr_reader :src, :dst, :yield_src, :yield_dst, :name, :pass_self
 
   DEFAULT_OPTIONS = {
     :safe => true,
-    :aliased_as => nil
+    :aliased_as => nil,
+    :yield => [nil, nil],
   }
 
   def initialize(name, src_type, dst_type, pass_self, options = {})
@@ -1146,6 +1147,11 @@ class Mapping
     @dst = dst_type
     @pass_self = pass_self
     @safe = options[:safe]
+    yield_types = options[:yield]
+    unless Array === yield_types && yield_types.size == 2
+      raise "blocks must be declared with :yield => [TYPE, TYPE]"
+    end
+    @yield_src, @yield_dst = yield_types
   end
 
   def mangled_name(prefix)
@@ -1159,7 +1165,7 @@ class Mapping
     else
       formal_args = ["self"] + param_list
     end
-    <<EOF
+    generate_yield_helpers(prefix) + <<EOF
 VALUE #{mangled_name(prefix)}_ex
       (VALUE *exception, int *status, #{fmt[formal_args]})
 {
@@ -1227,6 +1233,36 @@ EOF
   end
 
   private
+  def generate_yield_helpers(prefix)
+    return "" unless @yield_src && @yield_dst
+    fun_name = prefix + "_" + (@pass_self ? "" : "s_") + @caml_name.gsub(/\./, "_") + "_yield"
+    <<-EOF
+value #{fun_name}(value v)
+{
+  CAMLlocal1(ret);
+  VALUE ruby_val, ruby_ret;
+  int status = 0;
+  CAMLparam1(v);
+
+  ruby_val = #{@yield_src.caml_to_ruby("v")};
+  ruby_ret = rb_protect(rb_yield, ruby_val, &status);
+  if(status) {
+    VALUE msg = rb_eval_string("$!");
+    caml_failwith(StringValuePtr(msg));
+    CAMLreturn(Val_false); /* not reached */
+  }
+  ret = #{@yield_dst.ruby_to_caml_safe("ruby_ret", "status")};
+  if(status) {
+    VALUE msg = rb_eval_string("$!");
+    caml_failwith(StringValuePtr(msg));
+    CAMLreturn(Val_false); /* not reached */
+  }
+  CAMLreturn(ret);
+}
+
+    EOF
+  end
+
   def callback(f, args)
     case ar = arity
     when 0; "caml_callback_exn(#{f}, Val_unit)"
@@ -1348,6 +1384,8 @@ class Interface
       @mappings.each do |m|
         emit_prototypes_aux(io, m.src, emitted_prototypes, :ruby_to_caml)
         emit_prototypes_aux(io, m.dst, emitted_prototypes, :caml_to_ruby)
+        emit_prototypes_aux(io, m.yield_src, emitted_prototypes, :ruby_to_caml) if m.yield_src
+        emit_prototypes_aux(io, m.yield_dst, emitted_prototypes, :caml_to_ruby) if m.yield_dst
       end
     end
 
@@ -1355,6 +1393,8 @@ class Interface
       @mappings.each do |m|
         emit_helper_aux(io, m.src, emitted_helpers, :ruby_to_caml)
         emit_helper_aux(io, m.dst, emitted_helpers, :caml_to_ruby)
+        emit_helper_aux(io, m.yield_src, emitted_helpers, :ruby_to_caml) if m.yield_src
+        emit_helper_aux(io, m.yield_dst, emitted_helpers, :caml_to_ruby) if m.yield_dst
       end
     end
 
@@ -1426,7 +1466,7 @@ class Interface
 
     private
 
-    PROPAGATED_OPTIONS = [:safe, :aliased_as]
+    PROPAGATED_OPTIONS = [:safe, :aliased_as, :yield]
 
     def def_helper(name, types_and_options, pass_self)
       types_and_options = types_and_options.clone
