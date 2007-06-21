@@ -1,4 +1,5 @@
-rocaml  copyright (c) 2007 Mauricio Fernandez <mfp@acm.org>
+rocaml  Copyright (c) 2007 Mauricio Fernandez <mfp@acm.org>
+                           http://eigenclass.org
 
 Overview
 ========
@@ -10,8 +11,8 @@ Developing Ruby extensions with rocaml is easier and more convenient than
 writing a plain old C extension since (in addition to coding in Objective Caml
 instead of C):
 * rocaml handles type conversions for a wide range of types, including
-  abstract types and arrays of values of any supported type (e.g. arrays of
-  arrays of objects)
+  abstract types and arrays, tuples, variants and records of values of any
+  supported type (e.g. arrays of arrays of objects)
 * the boilerplate code that registers the Ruby methods, as well as all the
   code to wrap the calls to Objective Caml functions, is generated
   automatically. At no point is there any need to write a single line of C
