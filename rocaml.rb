@@ -1179,7 +1179,7 @@ class Mapping
   end
 
   def mangled_name(prefix)
-    prefix + "_wrapper__" + (@pass_self ? "" : "s_") + @caml_name.gsub(/\./, "_")
+    prefix + "_wrapper__" + (@pass_self ? "" : "s_") + mangle_ruby_method(@name)
   end
 
   def generate(prefix)
@@ -1257,6 +1257,20 @@ EOF
   end
 
   private
+  METHOD_MAPPINGS = {
+    :[] => "aref", :[]= => "aset", :+ => "plus", :- => "minus", :* => "times",
+    :/ => "div", :| => "or"
+  }
+  def mangle_ruby_method(name)
+    return METHOD_MAPPINGS[name] if METHOD_MAPPINGS[name]
+    case(name)
+    when /(.*)=/; "#{$1}_set"
+    when /(.*)!/; "#{$1}_bang"
+    when /(.*)\?/; "#{$1}_p"
+    else name
+    end
+  end
+
   def generate_yield_helpers(prefix)
     return "" unless @yield_src && @yield_dst
     fun_name = prefix + "_" + (@pass_self ? "" : "s_") + @caml_name.gsub(/\./, "_") + "_yield"
