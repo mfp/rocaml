@@ -973,7 +973,14 @@ static double #{name}_VALUE_to_double(VALUE v, int *status);
         <<-EOF
   {
     VALUE val;
-    val = rb_hash_aref(v, ID2SYM(rb_intern(#{@names[idx].to_s.inspect})));
+    switch(TYPE(v)) {
+    case T_HASH:
+      val = rb_hash_aref(v, ID2SYM(rb_intern(#{@names[idx].to_s.inspect})));
+      break;
+    case T_STRUCT:
+      val = rb_struct_aref(v, ID2SYM(rb_intern(#{@names[idx].to_s.inspect})));
+      break;
+    }
     #{block_set("ret", idx, "val", "status")}
     if(status && *status) CAMLreturn(Val_false);
   }
@@ -1008,7 +1015,8 @@ static value
   CAMLparam0();
   CAMLlocal1(ret);
 
-  if(TYPE(v) != T_HASH || NUM2INT(rb_funcall(v, rb_intern("size"), 0)) != #{@types.size}) {
+  if((TYPE(v) != T_HASH && TYPE(v) != T_STRUCT) ||
+     NUM2INT(rb_funcall(v, rb_intern("size"), 0)) != #{@types.size}) {
     rb_protect((VALUE (*)(VALUE))#{name}_do_raise,
                (VALUE)"Conversion to OCaml with #{name} needs a hash with keys #{keys}",
                status);
