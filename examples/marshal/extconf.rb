@@ -23,10 +23,17 @@ require 'rocaml'
 
 Interface.generate("fast_marshal") do
   vector_t = RECORD([:x, :y, :z], [FLOAT, FLOAT, FLOAT])
+  marshallers = {
+    "vector_array" => ARRAY(vector_t),
+    "string_array" => ARRAY(STRING),
+    "int_array"    => ARRAY(INT),
+  }
 
   def_class("FastMarshal") do |c|
-    fun "dump_vector_array", ARRAY(vector_t) => STRING
-    fun "load_vector_array", STRING => ARRAY(vector_t)
+    marshallers.each do |name, type|
+      fun "dump", type => STRING, :aliased_as => "dump_#{name}"
+      fun "load", STRING => type, :aliased_as => "load_#{name}"
+    end
   end
 end
 
