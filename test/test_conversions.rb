@@ -65,6 +65,8 @@ class TestROCamlConversions < Test::Unit::TestCase
       x = rand(100000).to_s
       aeq("string", x, x)
     end
+    s = "ads\0asdsad\0"
+    aeq("string", s, s)
   end
 
   def test_string_typecheck

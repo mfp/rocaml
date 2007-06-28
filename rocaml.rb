@@ -94,13 +94,29 @@ int_ruby_to_caml(VALUE v, int *status)
   end
 
   class String < Type
+    def caml_to_ruby_helper
+      <<-EOF
+static VALUE string_caml_to_ruby(value s)
+{
+  CAMLparam1(s);
+  CAMLreturn(rb_str_new(String_val(s), string_length(s)));
+}
+      EOF
+    end
+
+    def caml_to_ruby_prototype
+      <<-EOF
+static VALUE string_caml_to_ruby(value s);
+
+      EOF
+    end
+
     def caml_to_ruby(x)
-      "rb_str_new2(String_val(#{x}))"
+      "string_caml_to_ruby(#{x})"
     end
 
     def ruby_to_caml(x)
-      # TODO: use StringValueCStr ?? involves extra strlen
-      "caml_copy_string(StringValuePtr(#{x}))"
+      "string_ruby_to_caml_safe(#{x}, NULL)"
     end
 
     def ruby_to_caml_prototype
@@ -115,15 +131,15 @@ static value string_ruby_to_caml_safe(VALUE s, int *status);
 static value
 string_ruby_to_caml_safe(VALUE s, int *status)
 {
-  char *r;
   CAMLparam0();
   CAMLlocal1(ret);
 
-  r = (char *)rb_protect((VALUE (*)(VALUE)) rb_string_value_ptr, (VALUE)&s, status);
+  s = rb_protect((VALUE (*)(VALUE)) rb_string_value, (VALUE)&s, status);
   if(status && *status) {
       ret = Val_false;
   } else {
-      ret = caml_copy_string(r);
+      ret = caml_alloc_string(RSTRING(s)->len);
+      memcpy(String_val(ret), RSTRING(s)->ptr, RSTRING(s)->len);
   }
 
   CAMLreturn(ret);
