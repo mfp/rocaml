@@ -30,9 +30,13 @@ Interface.generate("rocaml_tests") do
     %w[bool int float string unit].each do |name|
       fun name, type(name) => type(name)
       fun "#{name}_array", ARRAY(type(name)) => STRING
+      fun "#{name}_list", LIST(type(name)) => STRING
     end
     fun "int_array_array", ARRAY(ARRAY(INT)) => STRING
     fun "float_array_array", ARRAY(ARRAY(FLOAT)) => STRING
+    fun "int_list_list", LIST(LIST(INT)) => STRING
+    fun "float_list_list", LIST(LIST(FLOAT)) => STRING
+
     fun "int_tuple2", TUPLE(INT, INT) => STRING
     fun "float_tuple2", TUPLE(FLOAT, FLOAT) => STRING
     fun "int_float_tuple2", TUPLE(INT, FLOAT) => STRING

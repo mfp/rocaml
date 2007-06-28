@@ -84,32 +84,29 @@ class TestROCamlConversions < Test::Unit::TestCase
     end
   end
 
-  def aux_test_array(type, &block)
-    aux_test(type, "array") { (1..50).map{|x| yield } }
+  def aux_test_array(arr_or_list, type, &block)
+    aux_test(type, arr_or_list) { (1..50).map{|x| yield } }
   end
 
-  def test_bool_array
-    aux_test_array("bool"){ rand > 0.5 }
-  end
-
-  def test_int_array
-    aux_test_array("int"){ rand(100001) - 50000 }
-  end
-
-  def test_float_array
-    aux_test_array("float"){ rand_float }
-  end
-
-  def test_string_array
-    aux_test_array("string"){ rand(1000000).to_s }
-  end
-
-  def test_int_array_array
-    aux_test_array("int_array"){ (1..2 + rand(10)).map{ rand(1000) } }
-  end
-
-  def test_float_array_array
-    aux_test_array("float_array"){ (1..2 + rand(10)).map{ rand_float } }
+  %w[array list].each do |t|
+    define_method("test_bool_#{t}") do
+      aux_test_array(t, "bool"){ rand > 0.5 }
+    end
+    define_method("test_int_#{t}") do
+      aux_test_array(t, "int"){ rand(100001) - 50000 }
+    end
+    define_method("test_float_#{t}") do
+      aux_test_array(t, "float"){ rand_float }
+    end
+    define_method("test_string_#{t}") do
+      aux_test_array(t, "string"){ rand(1000000).to_s }
+    end
+    define_method("test_int_#{t}_#{t}") do
+      aux_test_array(t, "int_#{t}"){ (1..2 + rand(10)).map{ rand(1000) } }
+    end
+    define_method("test_float_#{t}_#{t}") do
+      aux_test_array(t, "float_#{t}"){ (1..2 + rand(10)).map{ rand_float } }
+    end
   end
 
   def test_int_tuple2

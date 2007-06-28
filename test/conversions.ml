@@ -2,6 +2,7 @@
 open Printf
 
 let string_of_array f a = "[" ^ String.concat ", " (Array.to_list (Array.map f a)) ^ "]"
+let string_of_list f l = "[" ^ String.concat ", " (List.map f l) ^ "]"
 
 module Basic =
 struct
@@ -28,6 +29,25 @@ struct
       r "string_array" string_array;
       r "int_array_array" int_array_array;
       r "float_array_array" float_array_array
+end
+
+module Lists =
+struct
+  let bool_list = string_of_list (function true -> "true" | false -> "false")
+  let int_list = string_of_list string_of_int
+  let float_list = string_of_list string_of_float
+  let string_list = string_of_list (fun s -> "\"" ^ s ^ "\"")
+  let int_list_list = string_of_list int_list
+  let float_list_list = string_of_list float_list
+
+  let _ =
+    let r name f = Callback.register ("Conversions." ^ name) f in
+      r "bool_list" bool_list;
+      r "int_list" int_list;
+      r "float_list" float_list;
+      r "string_list" string_list;
+      r "int_list_list" int_list_list;
+      r "float_list_list" float_list_list
 end
 
 module Tuples =
