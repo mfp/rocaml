@@ -398,6 +398,97 @@ static value
     end
   end # Array
 
+  class List < Type
+    def initialize(el_type)
+      @typename = el_type.name.gsub(/\s+/, "")
+      @arr_type = Types::Array.new(el_type)
+    end
+
+    def type_dependencies
+      [@arr_type]
+    end
+
+    def name; "#{@typename} list" end
+
+    def caml_to_ruby(x)
+      "#{@typename}_list_caml_to_ruby(#{x})"
+    end
+
+    def caml_to_ruby_prototype
+      <<-EOF
+static VALUE #{@typename}_list_caml_to_ruby(value v);"
+
+      EOF
+    end
+
+    def caml_to_ruby_helper
+      <<-EOF
+static VALUE #{@typename}_list_caml_to_ruby(value v)
+{
+ static value *closure = NULL;
+ CAMLparam1(v);
+
+ if(closure == NULL) {
+   closure = caml_named_value("Array.of_list");
+   if(closure == NULL) {
+     /* FIXME: should raise an error, but cannot due to CAMLreturn */
+     rb_warning("Cannot find Array.of_list, your rocaml extension wasn't built correctly.");
+     CAMLreturn(Qnil);
+   }
+ }
+
+ /* FIXME: there could be an Out_of_memory exception if the list is too large */
+ v = caml_callback(*closure, v);
+ CAMLreturn(#{@arr_type.caml_to_ruby("v")});
+}
+
+      EOF
+    end
+
+    def ruby_to_caml(x)
+      "#{@typename}_list_ruby_to_caml(#{x}, NULL)"
+    end
+
+    def ruby_to_caml_safe(x, status)
+      "#{@typename}_list_ruby_to_caml(#{x}, #{status})"
+    end
+
+    def ruby_to_caml_prototype
+      <<-EOF
+static value #{@typename}_list_ruby_to_caml(VALUE v, int *status);
+
+      EOF
+    end
+
+    def ruby_to_caml_helper
+      <<-EOF
+static value #{@typename}_list_ruby_to_caml(VALUE v, int *status)
+{
+ static value *closure = NULL;
+ CAMLparam0();
+ CAMLlocal1(caml_arr_v);
+
+ if(closure == NULL) {
+   closure = caml_named_value("Array.to_list");
+   if(closure == NULL) {
+     do_raise_exception_tag(rb_eRuntimeError,
+       "Cannot find Array.to_list, your rocaml extension wasn't built correctly.",
+       status);
+     CAMLreturn(Qnil);
+   }
+ }
+
+ caml_arr_v = #{@arr_type.ruby_to_caml_safe("v", "status")};
+ if(status && *status) {
+   CAMLreturn(Val_false);
+ }
+ CAMLreturn(caml_callback(*closure, caml_arr_v));
+}
+
+      EOF
+    end
+  end
+
   class Abstract < Type
     attr_reader :name
     def initialize(name)
@@ -1139,6 +1230,7 @@ static VALUE
     UNIT = Unit.new
     FLOAT = Float.new
     def ARRAY(type); Array.new(type) end
+    def LIST(type); List.new(type) end
     def ABSTRACT(name); Abstract.new(name) end
     def TUPLE(*types); Tuple.new(*types) end
     def RECORD(names, types)

@@ -65,7 +65,10 @@ File.open("rubyOCamlUtil.ml", "w") do |f|
 (* register ocaml functions needed by ruby-ocaml *)
 let _ =
   (* used when mapping OCaml exceptions to Ruby *)
-  Callback.register "Printexc.to_string" Printexc.to_string
+  Callback.register "Printexc.to_string" Printexc.to_string;
+  Callback.register "Array.to_list" Array.to_list;
+  Callback.register "Array.of_list" Array.of_list;
+  ()
 
 EOF
 end
