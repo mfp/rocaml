@@ -73,8 +73,12 @@ let _ =
 EOF
 end
 
+extra_caml_libs = (["unix.cmxa"] + CAML_LIBS).map do |x|
+  File.join(ocaml_native_lib_path, "lib#{x.gsub(/cmxa$/,"a")}")
+end.select{|x| File.exist?(x)}
+
 # needed by mkmf's create_makefile
-$LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{ocaml_native_lib_path}/libunix.a"
+$LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{extra_caml_libs.join(" ")}"
 
 if File.exist?("depend.in")
   File.open("depend", "w"){|f| f.print File.read("depend.in") }
