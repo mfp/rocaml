@@ -186,16 +186,16 @@ value safe_rbFloat_to_caml(VALUE v, int *status)
 {
   VALUE r;
   CAMLparam0();
-  CAMLlocal1(ret);
 
+  if(TYPE(v) == T_FLOAT) {
+      CAMLreturn(caml_copy_double(RFLOAT(v)->value));
+  }
   r = rb_protect(rb_Float, v, status);
   if(status && *status) {
-      ret = Val_false;
+      CAMLreturn(Val_false);
   } else {
-      ret = caml_copy_double(RFLOAT(r)->value);
+      CAMLreturn(caml_copy_double(RFLOAT(r)->value));
   }
-
-  CAMLreturn(ret);
 }
       EOF
     end
@@ -316,6 +316,9 @@ static double
 {
   VALUE r;
 
+  if(TYPE(v) == T_FLOAT) {
+      return RFLOAT(v)->value;
+  }
   r = rb_protect(rb_Float, v, status);
   if(status && *status) {
       return 0.0;
