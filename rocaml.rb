@@ -1252,12 +1252,13 @@ class Mapping
   DEFAULT_OPTIONS = {
     :safe => true,
     :aliased_as => nil,
+    :as => nil,
     :yield => [nil, nil],
   }
 
   def initialize(name, src_type, dst_type, pass_self, options = {})
     options = DEFAULT_OPTIONS.merge(options)
-    @name = options[:aliased_as] || name
+    @name = options[:aliased_as] || options[:as] || name
     @caml_name = name
     @src = src_type
     @dst = dst_type
@@ -1596,7 +1597,7 @@ class Interface
 
     private
 
-    PROPAGATED_OPTIONS = [:safe, :aliased_as, :yield]
+    PROPAGATED_OPTIONS = [:safe, :aliased_as, :as, :yield]
 
     def def_helper(name, types_and_options, pass_self)
       types_and_options = types_and_options.clone
