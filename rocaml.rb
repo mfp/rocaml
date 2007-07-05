@@ -507,7 +507,10 @@ static value #{@typename}_list_ruby_to_caml(VALUE v, int *status)
     end
 
     def caml_to_ruby_prototype
-      <<-EOF
+      # if another class retuns a value of this type, caml_to_ruby could be
+      # needed before ruby_to_caml; we include the prototype for the latter in
+      # the former
+      _ruby_to_caml_prototype + <<-EOF
 static void abstract_#{name}_free(abstract_#{name} *ptr);
 static VALUE wrap_abstract_#{name}(value v);
 
@@ -542,7 +545,7 @@ wrap_abstract_#{name}(value v)
 EOF
     end
 
-    def ruby_to_caml_prototype
+    def _ruby_to_caml_prototype
       <<-EOF
 typedef struct {
   value v;
