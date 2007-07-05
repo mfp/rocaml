@@ -1626,7 +1626,7 @@ class Interface
     attr_reader :abstract_type
 
     DEFAULT_OPTIONS = {
-      :super => "rb_cObject",
+      :super => "Object",
       :under => nil
     }
     def initialize(name, options = {})
@@ -1647,11 +1647,11 @@ class Interface
   {
     VALUE scope;
     scope = rb_eval_string("#{@scope}");
-    #{container_name} = rb_define_class_under(scope, "#{@name}", #{@superclass});
+    #{container_name} = rb_define_class_under(scope, "#{@name}", rb_eval_string("::#{@superclass}"));
   }
 EOF
       else
-        io.puts %[  #{container_name} = rb_define_class("#{@name}", #{@superclass});]
+        io.puts %[  #{container_name} = rb_define_class("#{@name}", rb_eval_string("::#{@superclass}"));]
       end
     end
 
