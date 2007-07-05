@@ -1295,9 +1295,9 @@ VALUE #{mangled_name(prefix)}_ex
   static value *closure = NULL;
 
   if(closure == NULL) {
-    closure = caml_named_value("#{prefix}.#{@caml_name}");
+    closure = caml_named_value("#{caml_name(prefix)}");
     if(closure == NULL) {
-      *exception = rb_str_new2("Couldn't find OCaml value '#{prefix}.#{@caml_name}'.");
+      *exception = rb_str_new2("Couldn't find OCaml value '#{caml_name(prefix)}'.");
       CAMLreturn(Qnil);
     }
   }
@@ -1353,6 +1353,13 @@ EOF
   end
 
   private
+  def caml_name(prefix)
+    case @caml_name
+    when /.+\..+/; @caml_name
+    else "#{prefix}.#{@caml_name}"
+    end
+  end
+
   METHOD_MAPPINGS = {
     :[] => "aref", :[]= => "aset", :+ => "plus", :- => "minus", :* => "times",
     :/ => "div", :| => "or"
