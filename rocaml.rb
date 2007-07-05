@@ -1264,7 +1264,7 @@ class Mapping
 
   def initialize(name, src_type, dst_type, pass_self, options = {})
     options = DEFAULT_OPTIONS.merge(options)
-    @name = options[:aliased_as] || options[:as] || name
+    @name = options[:aliased_as] || options[:as] || name.gsub(/^.*\./, "")
     @caml_name = name
     @src = src_type
     @dst = dst_type
