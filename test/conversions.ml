@@ -9,7 +9,7 @@ struct
   let _ =
     let id x = x in
     let r f name = Callback.register ("Conversions." ^ name) f in
-      List.iter (r id) ["bool"; "int"; "float"; "string"; "unit"]
+      List.iter (r id) ["bool"; "int"; "big_int"; "float"; "string"; "unit"]
 end
 
 module Arrays =

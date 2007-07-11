@@ -94,6 +94,8 @@ int_ruby_to_caml(VALUE v, int *status)
   end
 
   class String < Type
+
+    # helper used by BigInt; keep in sync
     def caml_to_ruby_helper
       <<-EOF
 static VALUE string_caml_to_ruby(value s)
@@ -126,6 +128,7 @@ static value string_ruby_to_caml_safe(VALUE s, int *status);
       EOF
     end
 
+    # helper used by BigInt; keep in sync
     def ruby_to_caml_helper
       <<-EOF
 static value
@@ -150,6 +153,96 @@ string_ruby_to_caml_safe(VALUE s, int *status)
 
     def ruby_to_caml_safe(x, status)
       "string_ruby_to_caml_safe(#{x}, #{status})"
+    end
+  end
+
+  class BigInt < Type
+    def type_dependencies
+      [Types::String.new]
+    end
+
+    def caml_to_ruby(x)
+      "big_int_caml_to_ruby(#{x})"
+    end
+
+    def caml_to_ruby_prototype
+      <<-EOF
+static VALUE big_int_caml_to_ruby(value v);
+
+      EOF
+    end
+
+    def caml_to_ruby_helper
+      <<-EOF
+static VALUE
+big_int_caml_to_ruby(value v)
+{
+  CAMLparam1(v);
+  CAMLlocal1(s);
+  static value *closure = NULL;
+  VALUE ret;
+
+  if(closure == NULL) {
+    closure = caml_named_value("Big_int.string_of_big_int");
+    if(closure == NULL) {
+      /* FIXME: should raise an exception ? */
+      rb_warning("Cannot find Big_int.string_of_big_int; your extension isn't built correctly.");
+      CAMLreturn(INT2FIX(0));
+    }
+  }
+  s = caml_callback(*closure, v);
+  ret = string_caml_to_ruby(s);
+  ret = rb_funcall(ret, rb_intern("to_i"), 0);
+
+  CAMLreturn(ret);
+}
+      EOF
+    end
+
+    def ruby_to_caml(x)
+      "big_int_ruby_to_caml_safe(#{x}, NULL)"
+    end
+
+    def ruby_to_caml_safe(x, status)
+      "big_int_ruby_to_caml_safe(#{x}, #{status})"
+    end
+
+    def ruby_to_caml_prototype
+      <<-EOF
+static value big_int_ruby_to_caml_safe(VALUE v, int *status);
+
+      EOF
+    end
+
+    def ruby_to_caml_helper
+      <<-EOF
+static value
+big_int_ruby_to_caml_safe(VALUE v, int *status)
+{
+  CAMLparam0();
+  CAMLlocal1(ret);
+  static value *closure = NULL;
+
+  if(closure == NULL) {
+    closure = caml_named_value("Big_int.big_int_of_string");
+    if(closure == NULL) {
+      do_raise_exception_tag(rb_eRuntimeError,
+                             "Cannot find Big_int.big_int_of_string; your rocaml extension isn't built correctly.",
+                             status);
+      CAMLreturn(Val_false);
+    }
+  }
+
+  v = rb_obj_as_string(rb_to_int(v));
+  /* FIXME: check this? would break if somebody undefines Bignum, Fixnum#to_s,
+     probably nobody will ever */
+  ret = caml_alloc_string(RSTRING(v)->len);
+  memcpy(String_val(ret), RSTRING(v)->ptr, RSTRING(v)->len);
+
+  ret = caml_callback(*closure, ret);
+  CAMLreturn(ret);
+}
+      EOF
     end
   end
 
@@ -1231,6 +1324,7 @@ static VALUE
 
   module Exported
     INT = Int.new
+    BIGINT = BigInt.new
     BOOL = Bool.new
     STRING = String.new
     UNIT = Unit.new

@@ -21,13 +21,17 @@ $:.unshift ".."
 
 require 'rocaml'
 
+MAPPING = {
+  "big_int" => Types::Exported::BIGINT,
+}
+
 def type(name)
-  self.class.const_get(name.to_s.upcase)
+  self.class.const_get(name.to_s.upcase) rescue MAPPING[name]
 end
 
 Interface.generate("rocaml_tests") do
   def_module("Conversions") do
-    %w[bool int float string unit].each do |name|
+    %w[bool int big_int float string unit].each do |name|
       fun name, type(name) => type(name)
       fun "#{name}_array", ARRAY(type(name)) => STRING
       fun "#{name}_list", LIST(type(name)) => STRING

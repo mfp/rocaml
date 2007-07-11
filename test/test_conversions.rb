@@ -41,6 +41,10 @@ class TestROCamlConversions < Test::Unit::TestCase
     ["bogus", true, false].each{|x| atyp("int", x) }
   end
 
+  def test_big_int
+    ITERATIONS.times{ aeq("big_int", rand(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)) }
+  end
+
   def rand_float
     # string_of_float and Float#to_s differ for integers: 1. vs 1.0
     # so need to generate appropriate values, also take into account
