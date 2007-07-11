@@ -64,14 +64,20 @@ File.open("rubyOCamlUtil.ml", "w") do |f|
   f.puts <<EOF
 (* register ocaml functions needed by ruby-ocaml *)
 let _ =
-  (* used when mapping OCaml exceptions to Ruby *)
-  Callback.register "Printexc.to_string" Printexc.to_string;
-  Callback.register "Array.to_list" Array.to_list;
-  Callback.register "Array.of_list" Array.of_list;
-  ()
+  let r = Callback.register in
+    (* used when mapping OCaml exceptions to Ruby *)
+    r "Printexc.to_string" Printexc.to_string;
+    r "Array.to_list" Array.to_list;
+    r "Array.of_list" Array.of_list;
+    r "Big_int.big_int_of_string" Big_int.big_int_of_string;
+    r "Big_int.string_of_big_int" Big_int.string_of_big_int;
+    ()
 
 EOF
 end
+
+# required by the BIGINT conversions methods
+CAML_LIBS << "nums.cmxa" unless CAML_LIBS.include?("nums.cmxa")
 
 extra_caml_libs = (["unix.cmxa"] + CAML_LIBS).map do |x|
   File.join(ocaml_native_lib_path, "lib#{x.gsub(/cmxa$/,"a")}")
