@@ -512,7 +512,7 @@ static value
 
     def caml_to_ruby_prototype
       <<-EOF
-static VALUE #{@typename}_list_caml_to_ruby(value v);"
+static VALUE #{@typename}_list_caml_to_ruby(value v);
 
       EOF
     end
