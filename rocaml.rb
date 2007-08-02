@@ -309,7 +309,7 @@ value safe_rbFloat_to_caml(VALUE v, int *status)
       [@type]
     end
 
-    def name; "#{@type.name.gsub(/\s+/, "")} array" end
+    def name; "#{@type.name.gsub(/\s+/, "")}_array" end
 
     def caml_to_ruby(x)
       "#{@c_to_r_helper}(#{x})"
@@ -504,7 +504,7 @@ static value
       [@arr_type]
     end
 
-    def name; "#{@typename} list" end
+    def name; "#{@typename}_list" end
 
     def caml_to_ruby(x)
       "#{@typename}_list_caml_to_ruby(#{x})"
@@ -1885,6 +1885,7 @@ EOF
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
 #include <caml/memory.h>
+#include <caml/alloc.h>
 
 EOF
       @contexts.each{|c| c.emit_container_declaration(f)}
@@ -1915,6 +1916,7 @@ do_raise_exception_tag(VALUE klass, char *s, int *status)
   args[0] = klass;
   args[1] = rb_str_new2(s);
   rb_protect((VALUE (*)(VALUE))do_raise_exception_tag_aux, (VALUE)args, status);
+  return Qnil;
 }
 
 static VALUE
