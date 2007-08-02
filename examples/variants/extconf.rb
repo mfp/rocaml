@@ -28,6 +28,7 @@ Interface.generate("variants") do |iface|
     constant :Baz
     non_constant :Foobar, STRING
     non_constant :Barbaz, TUPLE(INT, STRING)
+    non_constant :Babar, TUPLE(LIST(STRING))
   end
 
   sym_kind = sym_variant("sym_kind") do
@@ -36,6 +37,7 @@ Interface.generate("variants") do |iface|
     constant :Baz
     non_constant :Foobar, STRING
     non_constant :Barbaz, TUPLE(INT, STRING)
+    non_constant :Babar, TUPLE(LIST(STRING))
   end
 
   def_module("SymbolicVariants", :under => "Variants") do

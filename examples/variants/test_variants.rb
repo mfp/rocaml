@@ -34,6 +34,7 @@ p SymbolicVariants.identity(:Bar)
 p SymbolicVariants.identity(:Foo)
 p SymbolicVariants.identity([:Foobar, "this is Foobar"])
 p SymbolicVariants.identity([:Barbaz, [42, "this is Barbaz"]])
+p SymbolicVariants.identity([:Babar, [["foo", "bar", "baz"]]])
 
 puts "Now a type error that should be detected..."
 p SymbolicVariants.identity([:Barbaz, "this is not Foobar"])

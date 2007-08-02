@@ -1,6 +1,6 @@
 open Printf
 
-type kind = Foo | Bar | Baz | Foobar of string | Barbaz of int * string
+type kind = Foo | Bar | Baz | Foobar of string | Barbaz of int * string | Babar of string list
 
 type t = { mutable kind : kind }
 
@@ -10,6 +10,7 @@ let string_of_kind = function
   | Baz -> "Baz"
   | Foobar s -> sprintf "Foobar \"%s\"" s
   | Barbaz (i, s) -> sprintf "Barbaz (%d, \"%s\")" i s
+  | Babar l -> sprintf "Babar [%s]" (String.concat ";" (List.map String.escaped l))
 
 let create kind = { kind = Foo }
 
