@@ -1886,6 +1886,7 @@ EOF
 #include <caml/callback.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
+#include <caml/fail.h>
 
 EOF
       @contexts.each{|c| c.emit_container_declaration(f)}
