@@ -49,6 +49,18 @@ Interface.generate("rocaml_tests") do
       TUPLE(STRING, INT, FLOAT, BOOL) =>
         TUPLE(STRING, INT, FLOAT, BOOL)
   end
+
+  def_class("T1", :under => "Conversions") do |c|
+    t = c.abstract_type
+    fun "make_t1", UNIT => t, :as => "new"
+    method "binary_abstract_t1_t1", [t, t] => t, :as => "f"
+  end
+
+  def_class("T2", :under => "Conversions") do |c|
+    t = c.abstract_type
+    fun "make_t2", UNIT => t, :as => "new"
+    method "binary_abstract_t2_t2", [t, t] => t, :as => "f"
+  end
 end
 
 require 'rocaml_extconf'

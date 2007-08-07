@@ -599,6 +599,10 @@ static value #{@typename}_list_ruby_to_caml(VALUE v, int *status)
       "unwrap_abstract_#{name}(#{x})"
     end
 
+    def ruby_to_caml_safe(x, status)
+      "unwrap_abstract_safe_#{name}(#{x}, #{status})"
+    end
+
     def caml_to_ruby_prototype
       # if another class retuns a value of this type, caml_to_ruby could be
       # needed before ruby_to_caml; we include the prototype for the latter in
@@ -661,6 +665,20 @@ unwrap_abstract_#{name}(VALUE v)
   CAMLreturn(ptr->v);
 }
 
+static value
+unwrap_abstract_safe_#{name}(VALUE v, int *status)
+{
+  CAMLparam0();
+  abstract_#{name} *ptr;
+
+  if(rb_class_of(v) != #{name}) {
+    do_raise_exception_tag(rb_eTypeError, "Expected argument of class #{name}", status);
+    CAMLreturn(Qnil);
+  }
+
+  Data_Get_Struct(v, abstract_#{name}, ptr);
+  CAMLreturn(ptr->v);
+}
 
 EOF
     end

@@ -66,3 +66,22 @@ struct
       r "string_int_float_bool_tuple4" (fun x -> x)
 end
 
+module AbstractTypes =
+struct
+  type t1 = { foo : int }
+  type t2 = { bar : int }
+
+  let t1 () = { foo = 1 }
+  let t2 () = { bar = 1 }
+
+  let f t1 t2 = { foo = t1.foo + t2.foo }
+
+  let g t1 t2 = { bar = t1.bar + t2.bar }
+
+  let _ =
+    let r name f = Callback.register name f in
+      r "T1.binary_abstract_t1_t1" f;
+      r "T2.binary_abstract_t2_t2" g;
+      r "T1.make_t1" t1;
+      r "T2.make_t2" t2
+end

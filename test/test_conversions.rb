@@ -1,6 +1,7 @@
 
 require 'test/unit'
 require 'rbconfig'
+require 'rocaml_tests'
 
 DIR  = File.dirname(File.expand_path(__FILE__))
 RUBY = File.join(*%w[bindir ruby_install_name].map{|x| Config::CONFIG[x]})
@@ -133,5 +134,11 @@ class TestROCamlConversions < Test::Unit::TestCase
     x = ["foobar", 42, 0.0125, true]
     out = rocamlrun("string_int_float_bool_tuple4", x, "p")
     assert_equal(%(["foobar", 42, 0.0125, true]), out)
+  end
+
+  def test_abstract_types
+    t1 = Conversions::T1.new
+    t2 = Conversions::T2.new
+    assert_raise(TypeError){ t1.f(t2) }
   end
 end
