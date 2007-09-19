@@ -27,7 +27,9 @@ require 'mkmf'
 
 CAML_TARGET = "#{EXT_NAME}_rocaml_runtime.o"
 if CAML_OBJS.empty?
-  objects = Dir["*.ml"].map{|s| s.sub(/\.ml$/, ".cmx")}
+  objects = Dir["*.ml"].map{|s| s.sub(/\.ml$/, ".cmx")}.reject do |f|
+    f =~ /pa_.*/
+  end
   CAML_OBJS.replace(objects)
 end
 
@@ -86,11 +88,71 @@ end.select{|x| File.exist?(x)}
 # needed by mkmf's create_makefile
 $LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{extra_caml_libs.join(" ")}"
 
+
+# determine whether camlp4 (or camlp5) can be used:
+
+have_camlp5 = ! `camlp5 -help 2> /dev/null `.empty?
+camlp4version = `camlp4 -version 2> /dev/null`
+have_camlp4 = ! camlp4version.empty?
+
+pa_rocaml_revdeps = Dir["*.ml"].map do |f|
+  "#{f.sub(/\.ml$/, ".cmx")}: pa_rocaml.cmo"
+end.join("\n")
+
+camlp4_flavor = nil
+
+if have_camlp5
+  CAML_FLAGS << " -pp 'camlp5o -I . pa_rocaml.cmo'"
+  PA_ROCAML_RULES = <<-EOF
+pa_rocaml.cmo: pa_rocaml.ml
+	ocamlc -c -I +camlp5 -pp "camlp5o -I +camlp5 pa_extend.cmo q_MLast.cmo -loc _loc" pa_rocaml.ml
+
+#{pa_rocaml_revdeps}
+  EOF
+  camlp4_flavor = 309
+
+elsif have_camlp4 && camlp4version < "3.10.0"
+  CAML_FLAGS << " -pp 'camlp4o -I . pa_rocaml.cmo'"
+  PA_ROCAML_RULES = <<-EOF
+pa_rocaml.cmo: pa_rocaml.ml
+	ocamlc -c -I +camlp4 -pp "camlp4o -I +camlp4 pa_extend.cmo q_MLast.cmo -loc _loc" pa_rocaml.ml
+
+#{pa_rocaml_revdeps}
+  EOF
+  camlp4_flavor = 309
+
+elsif have_camlp4 && camlp4version >= "3.10.0"
+  CAML_FLAGS << " -pp 'camlp4o -I . pa_rocaml.cmo'"
+  PA_ROCAML_RULES = <<-EOF
+pa_rocaml.cmo: pa_rocaml.ml
+	ocamlc -c -I +camlp4 -pp "camlp4orf -loc _loc" pa_rocaml.ml
+
+#{pa_rocaml_revdeps}
+  EOF
+  camlp4_flavor = 310
+
+elsif defined? NEED_CAMLP4 && NEED_CAMLP4
+  puts <<-EOF
+This extension needs the camlp4 (or alternatively camlp5) Pre-Processor
+and Pretty Printer for OCaml, probably to be found in the camlp4 or camlp5
+packages. camlp4 is distributed with OCaml and will be installed if you
+build the interpreter from the sources.
+
+Run extconf.rb again once you've installed it.
+  EOF
+  exit(1)
+
+else # not found, but not actually said to be needed either, assume it's OK
+  PA_ROCAML_RULES = ""
+end
+
 if File.exist?("depend.in")
   File.open("depend", "w"){|f| f.print File.read("depend.in") }
 else
   File.open("depend", "w"){|f| } # overwrite previous
 end
+
+ocamldep_sources = (Dir["*.ml"] + Dir["*.mli"]) - %w[pa_rocaml.ml]
 
 File.open("depend", "a") do |f|
   f.puts <<EOF
@@ -116,6 +178,7 @@ $(DLLIB): $(OCAML_TARGET)
 $(OCAML_TARGET): #{CAML_OBJS.join(" ")} #{CAML_OBJS.map{|x| x.sub(/\.cmx$/, ".o")}.join(" ")}
 	#{ocamlopt_ld_cmd("$@", "$^")}
 
+#{PA_ROCAML_RULES}
 
 .SUFFIXES: .c .m .cc .cxx .cpp .C .o .mli .ml .cmi .cmo .cmx
 
@@ -143,7 +206,7 @@ clean: clean_rocaml
 .PHONY: distclean_rocaml
 
 distclean_rocaml:
-	@-$(RM) *_rocaml_wrapper.c depend .depend rubyOCamlUtil.ml
+	@-$(RM) *_rocaml_wrapper.c depend .depend rubyOCamlUtil.ml pa_rocaml.ml
 
 distclean: distclean_rocaml
 
@@ -152,11 +215,77 @@ distclean: distclean_rocaml
 
 .depend depend:
 	@-$(RM) .depend
-	$(OCAMLDEP) $(OCAML_INCLUDES) *.ml *.mli > .depend
+	$(OCAMLDEP) $(OCAML_INCLUDES) #{ocamldep_sources.map{|x| x.intern}.join(" ")} > .depend
 
 include .depend
 EOF
 end
 
+PA_ROCAML_309 = <<'EOF'
+
+let module_name =
+  let s = Sys.argv.(Array.length Sys.argv - 1) in
+    String.capitalize (String.sub s 0 (String.rindex s '.'))
+let namespace = ref module_name
+
+let export _loc ids =
+  let exprs = List.map
+                (fun id ->
+                   let name = !namespace ^ "." ^ id in
+                     <:expr< Callback.register $str:name$ $lid:id$ >>)
+                ids in
+  <:str_item< do { $list:exprs$ } >>
+
+
+EXTEND
+  Pcaml.str_item: LEVEL "top" [
+    [
+      "export"; names = LIST1 LIDENT SEP "," -> export _loc names
+    | "export"; e = Pcaml.expr; "as"; id = LIDENT ->
+        let id = !namespace ^ "." ^ id in
+          <:str_item< do{ Callback.register $str:id$ $e$ } >>
+    | "namespace"; n = STRING -> namespace := n; <:str_item< declare end >>
+    ]
+  ];
+END;;
+EOF
+
+PA_ROCAML_310 = <<'EOF'
+
+open Camlp4.PreCast
+
+let module_name =
+  let s = Sys.argv.(Array.length Sys.argv - 1) in
+    String.capitalize (String.sub s 0 (String.rindex s '.'))
+let namespace = ref module_name
+
+let export _loc ids =
+  let exprs = List.map
+                (fun id ->
+                   let name = !namespace ^ "." ^ id in
+                     <:expr< Callback.register $str:name$ $lid:id$ >>)
+                ids in
+  <:str_item< do { $list:exprs$ } >>
+
+
+EXTEND Gram
+  Syntax.str_item: LEVEL "top" [
+    [
+      "export"; names = LIST1 [ x = LIDENT -> x ] SEP "," -> export _loc names
+    | "export"; e = Syntax.expr; "as"; id = LIDENT ->
+        let id = !namespace ^ "." ^ id in
+          <:str_item< do{ Callback.register $str:id$ $e$ } >>
+    | "namespace"; n = STRING -> namespace := n; <:str_item< >>
+    ]
+  ];
+END;;
+EOF
+
+case camlp4_flavor
+when 309
+  File.open("pa_rocaml.ml", "w"){|f| f.puts PA_ROCAML_309}
+when 310
+  File.open("pa_rocaml.ml", "w"){|f| f.puts PA_ROCAML_310}
+end
 
 create_makefile(EXT_NAME)
