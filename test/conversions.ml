@@ -21,14 +21,9 @@ struct
   let int_array_array = string_of_array int_array
   let float_array_array = string_of_array float_array
 
-  let _ =
-    let r name f = Callback.register ("Conversions." ^ name) f in
-      r "bool_array" bool_array;
-      r "int_array" int_array;
-      r "float_array" float_array;
-      r "string_array" string_array;
-      r "int_array_array" int_array_array;
-      r "float_array_array" float_array_array
+
+  export bool_array, int_array, float_array, string_array, int_array_array,
+         float_array_array
 end
 
 module Lists =
@@ -40,14 +35,8 @@ struct
   let int_list_list = string_of_list int_list
   let float_list_list = string_of_list float_list
 
-  let _ =
-    let r name f = Callback.register ("Conversions." ^ name) f in
-      r "bool_list" bool_list;
-      r "int_list" int_list;
-      r "float_list" float_list;
-      r "string_list" string_list;
-      r "int_list_list" int_list_list;
-      r "float_list_list" float_list_list
+  export bool_list, int_list, float_list, string_list, int_list_list,
+         float_list_list
 end
 
 module Tuples =
@@ -57,13 +46,8 @@ struct
   let int_float_tuple2 (a, b) = sprintf "[%d, %s]" a (string_of_float b)
   let string_tuple2 (a, b) = sprintf "[\"%s\", \"%s\"]" a b
 
-  let _ =
-    let r name f = Callback.register ("Conversions." ^ name) f in
-      r "int_tuple2" int_tuple2;
-      r "float_tuple2" float_tuple2;
-      r "int_float_tuple2" int_float_tuple2;
-      r "string_tuple2" string_tuple2;
-      r "string_int_float_bool_tuple4" (fun x -> x)
+  export int_tuple2, float_tuple2, int_float_tuple2, string_tuple2
+  export (fun x -> x) aliased "string_int_float_bool_tuple4"
 end
 
 module AbstractTypes =
@@ -78,10 +62,11 @@ struct
 
   let g t1 t2 = { bar = t1.bar + t2.bar }
 
-  let _ =
-    let r name f = Callback.register name f in
-      r "T1.binary_abstract_t1_t1" f;
-      r "T2.binary_abstract_t2_t2" g;
-      r "T1.make_t1" t1;
-      r "T2.make_t2" t2
+  namespace "T1"
+  export (f) aliased "binary_abstract_t1_t1"
+  export (t1) aliased "make_t1"
+
+  namespace "T2"
+  export (g) aliased "binary_abstract_t2_t2"
+  export (t2) aliased "make_t2"
 end
