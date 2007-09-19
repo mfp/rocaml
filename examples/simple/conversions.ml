@@ -16,10 +16,4 @@ exception NegativeNumber of int
 let raise_if_negative num =
   if num < 0 then raise (NegativeNumber num)
 
-let _ =
-  let r = Callback.register in
-    r "Conversions.sum_int_array" sum_int_array;
-    r "Conversions.sum_vectors" sum_vectors;
-    r "Conversions.sum_arrays" sum_arrays;
-    r "Conversions.raise_if_negative" raise_if_negative
-
+export sum_int_array, sum_vectors, sum_arrays, raise_if_negative

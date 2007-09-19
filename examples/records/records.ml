@@ -10,8 +10,9 @@ type vector = { x : float; y : float; z : float }
 
 let add_vector a b = { x = a.x +. b.x; y = a.y +. b.y; z = a.z +. b.z}
 
-open Callback
-let _ =
-  register "Records.test_record" test_record;
-  register "Records.add_vector" add_vector
+(* if not specified, the namespace is the current module name
+ * (capitalized filename) *)
+
+(* namespace "Records" *)
+export test_record, add_vector
 

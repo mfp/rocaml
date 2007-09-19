@@ -29,12 +29,8 @@ let identity kind =
   printf "got %s\n%!" (string_of_kind kind);
   kind
 
-open Callback
-let _ =
-  register "DummyBase.create" create;
-  register "DummyBase.get_kind" get_kind;
-  register "DummyBase.set_kind" set_kind;
-  register "DummyBase.tuple" tuple;
-  register "DummyBase.send_tuple" send_tuple;
-  register "SymbolicVariants.identity" identity
+namespace "DummyBase"
+export create, get_kind, set_kind, tuple, send_tuple
 
+namespace "SymbolicVariants"
+export identity

@@ -5,7 +5,8 @@ let dump x = Marshal.to_string x [Marshal.No_sharing]
 
 let load s = Marshal.from_string s 0
 
-open Callback
-let _ =
-  register "FastMarshal.dump" dump;
-  register "FastMarshal.load" load
+(* the default namespace is the current module name, so the following isn't
+ * actually needed *)
+namespace "FastMarshal"
+
+export dump, load

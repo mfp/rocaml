@@ -18,10 +18,9 @@ let fib_range_plus first last arr =
      ^ "]");
   Array.mapi (fun i x -> float_of_int x +. arr.(i)) (fib_range first last)
 
-open Callback
-let _ =
-  register "Fib.fib" fib;
-  register "Fib.fib_range" fib_range;
-  register "Fib.fib_range_s" fib_range_s;
-  register "Fib.fib_range_plus" fib_range_plus;
+
+(* namespace "Fib" *)
+(* the default namespace is the current module name *)
+
+export fib, fib_range, fib_range_s, fib_range_plus
 

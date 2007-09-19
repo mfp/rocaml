@@ -18,11 +18,9 @@ let dec t =
 
 let get t = t.value
 
-open Callback
-let _ =
-  register "Oo.new_from_string" of_string;
-  register "Oo.new" create;
-  register "Oo.inc" inc;
-  register "Oo.dec" dec;
-  register "Oo.get" get
+(* the default namespace is the current module name, so the following isn't
+ * actually needed *)
+(* namespace "Oo" *)
 
+export create, inc, dec, get
+export (of_string) aliased "new_from_string"
