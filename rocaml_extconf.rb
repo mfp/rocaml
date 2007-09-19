@@ -91,8 +91,8 @@ $LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{extra_caml_
 
 # determine whether camlp4 (or camlp5) can be used:
 
-have_camlp5 = ! `camlp5 -help 2> /dev/null `.empty?
-camlp4version = `camlp4 -version 2> /dev/null`
+have_camlp5 = ! `camlp5 -v 2>&1`["version"].empty?
+camlp4version = `camlp4 -v 2>&1`[/version\s+(\d.*)/, 1]
 have_camlp4 = ! camlp4version.empty?
 
 pa_rocaml_revdeps = Dir["*.ml"].map do |f|
@@ -241,9 +241,9 @@ EXTEND
   Pcaml.str_item: LEVEL "top" [
     [
       "export"; names = LIST1 LIDENT SEP "," -> export _loc names
-    | "export"; e = Pcaml.expr; "as"; id = LIDENT ->
-        let id = !namespace ^ "." ^ id in
-          <:str_item< do{ Callback.register $str:id$ $e$ } >>
+    | "export"; e = Pcaml.expr; "aliased"; id = Pcaml.expr ->
+        let id = <:expr< $str:!namespace$ ^ "." ^ $id$ >> in
+          <:str_item< do{ Callback.register $id$ $e$ } >>
     | "namespace"; n = STRING -> namespace := n; <:str_item< declare end >>
     ]
   ];
@@ -272,9 +272,9 @@ EXTEND Gram
   Syntax.str_item: LEVEL "top" [
     [
       "export"; names = LIST1 [ x = LIDENT -> x ] SEP "," -> export _loc names
-    | "export"; e = Syntax.expr; "as"; id = LIDENT ->
-        let id = !namespace ^ "." ^ id in
-          <:str_item< do{ Callback.register $str:id$ $e$ } >>
+    | "export"; e = Syntax.expr; "aliased"; id = Syntax.expr ->
+        let id = <:expr< $str:!namespace$ ^ "." ^ $id$ >> in
+          <:str_item< do{ Callback.register $id$ $e$ } >>
     | "namespace"; n = STRING -> namespace := n; <:str_item< >>
     ]
   ];
