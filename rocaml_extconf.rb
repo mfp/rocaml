@@ -43,7 +43,7 @@ if ocaml_native_lib_path.nil?
   exit
 end
 
-maybe_opt = lambda{|x| opt = "#{x}.opt"; system(x) ? opt : x }
+maybe_opt = lambda{|x| opt = "#{x}.opt"; system(opt) ? opt : x }
 
 if OCAML_PACKAGES.empty? then
   OCAMLC   = maybe_opt["ocamlc"]
