@@ -91,9 +91,9 @@ $LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{extra_caml_
 
 # determine whether camlp4 (or camlp5) can be used:
 
-have_camlp5 = ! `camlp5 -v 2>&1`["version"].empty?
+have_camlp5 = ! `camlp5 -v 2>&1`["version"].nil?
 camlp4version = `camlp4 -v 2>&1`[/version\s+(\d.*)/, 1]
-have_camlp4 = ! camlp4version.empty?
+have_camlp4 = ! camlp4version.nil?
 
 pa_rocaml_revdeps = Dir["*.ml"].map do |f|
   "#{f.sub(/\.ml$/, ".cmx")}: pa_rocaml.cmo"
