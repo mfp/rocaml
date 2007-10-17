@@ -20,8 +20,17 @@ instead of C):
 
 Making an extension with rocaml involves two steps:
 * implementing the desired functionality in Objective Caml, and registering
-  the functions to be exported
-  (using Callback.register : string -> 'a -> unit)
+  the functions to be exported, using either:
+  * Callback.register : string -> 'a -> unit
+  * the supplied camlp4 extension, which is automatically generated and built
+    by rocaml and allows you to do
+      ...
+      (* definition of foo, bar, baz *)
+      ...
+      namespace "Whatever"
+      export foo, bar, baz
+      export (function x y -> foo y x ) aliased "barbaz"
+
 * creating the extconf.rb file (just modify the sample extconf.rb distributed
   with rocaml) defining the interface of your Objective Caml code.
 
@@ -29,7 +38,7 @@ Requirements
 ------------
   * Ruby 1.8 or 1.9
   * the C toolchain used to build normal Ruby extensions
-  * ocaml -- rocaml has been tested with ocaml 3.09.2, but it should
+  * ocaml -- rocaml has been tested with ocaml 3.09.2 and 3.10.0, but it should
     work with any version compatible with your Objective Caml code (as long as
     a few functions like Callback.register and the command-line interface are
     compatible)
@@ -38,8 +47,8 @@ Making an extension
 -------------------
 
   * copy rocaml.rb and rocaml_extconf.rb to the source directory.
-  * add the appropriate Callback.register calls to your ML code in order to
-    export the functions to be made available to Ruby.
+  * add the appropriate Callback.register calls and/or export statements to
+    your ML code in order to export the functions to be made available to Ruby.
   * create an extconf.rb file based on the sample one distributed with rocaml.
     The interface must match the functions exported in the previous step.
 
