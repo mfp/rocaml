@@ -43,6 +43,8 @@ if ocaml_native_lib_path.nil?
   exit
 end
 
+$INCFLAGS << " -I#{ocaml_native_lib_path}"
+
 maybe_opt = lambda{|x| opt = "#{x}.opt"; system(opt) ? opt : x }
 
 if OCAML_PACKAGES.empty? then
