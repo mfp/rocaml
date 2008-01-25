@@ -88,7 +88,7 @@ extra_caml_libs = (["unix.cmxa"] + CAML_LIBS).map do |x|
 end.select{|x| File.exist?(x)}
 
 # needed by mkmf's create_makefile
-$LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{extra_caml_libs.join(" ")}"
+$LOCAL_LIBS = "#{ocaml_native_lib_path}/libasmrun.a #{extra_caml_libs.join(" ")}"
 # try to add GCC's libgcc, required on Sparc
 libgcc = Dir["/lib/libgcc*"].first
 $LOCAL_LIBS << " " << libgcc if libgcc
@@ -306,4 +306,12 @@ when 309
   File.open("pa_rocaml.ml", "w"){|f| f.puts PA_ROCAML_309}
 when 310
   File.open("pa_rocaml.ml", "w"){|f| f.puts PA_ROCAML_310}
+end
+
+class Object
+  old_create_makefile = instance_method(:create_makefile)
+  define_method(:create_makefile) do |target|
+    $LOCAL_LIBS = "#{CAML_TARGET} #{$LOCAL_LIBS}"
+    old_create_makefile.bind(self).call(target)
+  end
 end
