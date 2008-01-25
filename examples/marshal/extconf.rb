@@ -38,3 +38,4 @@ Interface.generate("fast_marshal") do
 end
 
 require 'rocaml_extconf'
+create_makefile(EXT_NAME)

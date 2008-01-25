@@ -39,3 +39,4 @@ Interface.generate("fib") do
 end
 
 require 'rocaml_extconf'
+create_makefile(EXT_NAME)

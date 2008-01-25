@@ -57,3 +57,4 @@ Interface.generate("variants") do |iface|
 end
 
 require 'rocaml_extconf'
+create_makefile(EXT_NAME)

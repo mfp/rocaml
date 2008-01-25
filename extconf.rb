@@ -60,3 +60,11 @@ Interface.generate(EXT_NAME) do
 end
 
 require 'rocaml_extconf'
+
+# you can use mkmf "directives" such as find_library here
+#
+# e.g. 
+#
+#raise "Cannot find PCRE." unless find_library("pcre", "pcre_free")
+
+create_makefile(EXT_NAME)

@@ -1,0 +1,10 @@
+
+User-visible changes
+====================
+
+Since 0.6.1
+-----------
+* you have to do
+   create_makefile(EXT_NAME)
+  at the end of your extconf.rb. This allows you to add mkmf "directives"
+  (such as find_library) and to modify the $CFLAGS and other options.

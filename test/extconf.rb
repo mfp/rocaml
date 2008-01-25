@@ -64,3 +64,5 @@ Interface.generate("rocaml_tests") do
 end
 
 require 'rocaml_extconf'
+
+create_makefile(EXT_NAME)

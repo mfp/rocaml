@@ -291,5 +291,3 @@ when 309
 when 310
   File.open("pa_rocaml.ml", "w"){|f| f.puts PA_ROCAML_310}
 end
-
-create_makefile(EXT_NAME)
