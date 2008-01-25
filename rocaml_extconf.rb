@@ -89,7 +89,9 @@ end.select{|x| File.exist?(x)}
 
 # needed by mkmf's create_makefile
 $LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{extra_caml_libs.join(" ")}"
-
+# try to add GCC's libgcc, required on Sparc
+libgcc = Dir["/lib/libgcc*"].first
+$LOCAL_LIBS << " " << libgcc if libgcc
 
 # determine whether camlp4 (or camlp5) can be used:
 
