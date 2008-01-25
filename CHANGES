@@ -8,3 +8,9 @@ Since 0.6.1
    create_makefile(EXT_NAME)
   at the end of your extconf.rb. This allows you to add mkmf "directives"
   (such as find_library) and to modify the $CFLAGS and other options.
+* stub libraries associated to packages (e.g. libcryptokit.a) are linked
+  automatically. Note that you will need to use find_library for the libs.
+  they link against; for instance, libpcre_stubs.a requires libpcre.so,
+  so you have to do something like
+    raise "Cannot find PCRE." unless find_library("pcre", "pcre_free")
+  before the call to create_makefile.

@@ -93,6 +93,22 @@ $LOCAL_LIBS = "#{CAML_TARGET} #{ocaml_native_lib_path}/libasmrun.a #{extra_caml_
 libgcc = Dir["/lib/libgcc*"].first
 $LOCAL_LIBS << " " << libgcc if libgcc
 
+
+unless OCAML_PACKAGES.empty?
+  pkgdirs = `ocamlfind -query -r -format "%p %d" #{OCAML_PACKAGES.join(" ")}`.
+            split(/\n/).map do |line|
+              pkg, dir = line.split(/\s+/)
+              if %w[nums unix].include?(pkg)
+                nil
+              else
+                dir
+              end
+            end.compact
+  local_libs = Dir["{#{pkgdirs.join(",")}}/lib*.a"].join(" ")
+  puts "Will link against these package libs: #{local_libs}"
+  $LOCAL_LIBS << " #{local_libs}"
+end
+
 # determine whether camlp4 (or camlp5) can be used:
 
 have_camlp5 = ! `camlp5 -v 2>&1`["version"].nil?
