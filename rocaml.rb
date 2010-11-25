@@ -341,7 +341,7 @@ static VALUE
   int siz;
   int i;
 
-  siz = Wosize_val(v) / 2; /* 2 words per double */
+  siz = Wosize_val(v) / Double_wosize;
   ret = rb_ary_new2(siz);
   RARRAY(ret)->len = siz;
   for(i = 0; i < siz; i++) {
@@ -396,7 +396,7 @@ static value
   int i;
 
   siz = RARRAY(v)->len;
-  ret = caml_alloc(siz * 2, Double_array_tag); /* 2 words per double */
+  ret = caml_alloc(siz * Double_wosize, Double_array_tag);
   for(i = 0; i < siz; i++) {
       Store_double_field(ret, i, RFLOAT(rb_Float(RARRAY(v)->ptr[i]))->value);
   }
@@ -433,7 +433,7 @@ static value
     CAMLreturn(Val_false);
   }
   siz = RARRAY(v)->len;
-  ret = caml_alloc(siz * 2, Double_array_tag); /* 2 words per double */
+  ret = caml_alloc(siz * Double_wosize, Double_array_tag);
   for(i = 0; i < siz; i++) {
       double d = #{@r_to_c_helper}_safe_rbFloat(RARRAY(v)->ptr[i], status);
       if(status && *status) {
@@ -1332,7 +1332,8 @@ static VALUE
     end
 
     def block_size
-      @types.size * 2 # 2 words per float
+      pointer_size = ['foobar'].pack('p').size
+      @types.size * 8 / pointer_size
     end
 
     def tag
