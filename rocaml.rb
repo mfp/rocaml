@@ -344,6 +344,7 @@ static VALUE
   siz = Wosize_val(v) / Double_wosize;
   ret = rb_ary_new2(siz);
   RARRAY(ret)->len = siz;
+  for(i = 0; i < size; i++) RARRAY(ret)->ptr[i] = Qnil;
   for(i = 0; i < siz; i++) {
       RARRAY(ret)->ptr[i] = rb_float_new(Double_field(v, i));
   }
@@ -365,6 +366,7 @@ static VALUE
   siz = Wosize_val(v);
   ret = rb_ary_new2(siz);
   RARRAY(ret)->len = siz;
+  for(i = 0; i < size; i++) RARRAY(ret)->ptr[i] = Qnil;
   for(i = 0; i < siz; i++) {
       RARRAY(ret)->ptr[i] = #{@type.caml_to_ruby("Field(v, i)")};
   }
