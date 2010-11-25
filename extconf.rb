@@ -1,3 +1,8 @@
+## rocaml Copyright (c) 2007-2010 Mauricio Fernandez <mfp@acm.org>
+##                                http://eigenclass.org
+## Use and redistribution subject to the same conditions as Ruby.
+## See the LICENSE file included in rocaml's distribution for more
+## information.
 
 # Sample rocaml extconf.rb.
 # Copy to your extension directory and modify as needed. In general, only
