@@ -43,6 +43,16 @@ Requirements
     a few functions like Callback.register and the command-line interface are
     compatible)
 
+Some platforms (notably AMD64/x86_64) require that the OCaml environment (i.e.
+compiler, runtime and libs) be compiled with special options, not used
+currently by the major distributions like Debian. In particular, in order to
+use rocaml on AMD64 you'll need to compile OCaml 3.12.0 (the support for
+PIC-enabled runtimes was added fairly recently) with
+
+   ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
+
+as explained in OCaml's INSTALL.
+
 Making an extension
 -------------------
 
